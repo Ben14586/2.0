@@ -1270,7 +1270,9 @@
               <article class="glass-card game-card">
                 <div class="game-card__media">${mediaMarkup}</div>
                 <div class="game-card__top">
-                  <div class="game-thumb">${initials}</div>
+                  <div class="game-thumb">
+                    ${game.playImage ? `<img src="${escapeHtml(game.playImage)}" alt="" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" /><span style="display:none;">${initials}</span>` : initials}
+                  </div>
                   <div>
                     <h3>${escapeHtml(game.name)}</h3>
                     <p>${escapeHtml(catName)}</p>

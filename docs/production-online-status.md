@@ -2,8 +2,8 @@
 
 ## Snapshot
 
-- [x] backend package exists - backend-deploy-latest.zip (1748342 bytes)
-- [x] netlify package exists - netlify-deploy-latest.zip (1620089 bytes)
+- [x] backend package exists - backend-deploy-latest.zip (1753570 bytes)
+- [x] netlify package exists - netlify-deploy-latest.zip (1622000 bytes)
 - [x] backend package contents
 - [x] netlify package contents
 - [x] netlify game catalog injected - games=16
@@ -21,11 +21,18 @@
 
 ## Next External Step
 
-1. Upload the rebuilt `netlify-deploy-latest.zip` to Netlify.
-2. In Render Environment, set `PUBLIC_API_BASE_URL=https://two-0-ayb0.onrender.com`.
-3. Create one real test order from the Netlify site and confirm the order ID starts with `ORD-`.
-4. Open admin and verify the order appears, status updates, and tracking can find it.
+1. Deploy `backend-deploy-latest.zip` to Render or Railway.
+2. Confirm online `/health` returns success.
+3. Run:
+
+```powershell
+npm run go-live:connect -- https://your-backend-host.example.com
+```
+
+4. Upload the rebuilt `netlify-deploy-latest.zip` to Netlify.
+5. Create one real test order from the Netlify site and confirm the order ID starts with `ORD-`.
+6. Open admin and verify the order appears, status updates, and tracking can find it.
 
 ## Current Blocker
 
-Backend is online at `https://two-0-ayb0.onrender.com`. The remaining blocker is uploading the refreshed Netlify package so the live public site uses this backend URL.
+The project is packaged locally. The remaining blocker is an external backend host URL/account session. Netlify alone cannot create durable online orders without that backend URL.
