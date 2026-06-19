@@ -1,0 +1,17 @@
+{
+  "backend": {
+    "name": "backend-deploy-latest.zip",
+    "bytes": 1744616,
+    "sha256": "d8343f990ceffc05f4faf4a1f4e559b26ae3ff9cc73f206f511660ce5c031392",
+    "file_count": 78,
+    "game_image_count": 16
+  },
+  "netlify": {
+    "name": "netlify-deploy-latest.zip",
+    "bytes": 1619857,
+    "sha256": "ac4380ad8ee906fb38eddca006b1617da3101cc822d4a0d7073100a0212612cb",
+    "file_count": 24,
+    "game_image_count": 16
+  },
+  "release_dir": "C:\\Users\\brnbe\\Documents\\Codex\\2026-06-10\\full-stack-developer-ux-ui-designer\\outputs\\game-services-web-structure\\step2-backend-release"
+}

@@ -1,0 +1,15 @@
+[build]
+  command = "npm run export:static"
+  publish = "netlify-deploy"
+
+[build.environment]
+  PUBLIC_API_BASE_URL = "https://two-0-ayb0.onrender.com"
+  PUBLIC_SITE_URL = "https://store-game-0.netlify.app"
+  ADMIN_SITE_URL = "https://store-game-0.netlify.app"
+  ALLOWED_ORIGINS = "https://store-game-0.netlify.app"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "same-origin"

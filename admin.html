@@ -1,0 +1,1563 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Game Services Admin Portal</title>
+    <script src="./runtime-config.js"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg-1: #070610;
+        --bg-2: #100b1b;
+        --bg-3: #1b1428;
+        --panel: rgba(20, 15, 31, 0.94);
+        --panel-2: rgba(29, 22, 42, 0.96);
+        --field: rgba(12, 9, 20, 0.94);
+        --line: rgba(236, 224, 255, 0.14);
+        --line-strong: rgba(236, 224, 255, 0.24);
+        --text: #fbf8ff;
+        --muted: #c9bed8;
+        --accent: #9d4edd;
+        --accent-2: #ffcf7d;
+        --good: #87d493;
+        --warn: #e7a36f;
+        --bad: #e86f86;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 20% 20%, rgba(157, 78, 221, 0.24), transparent 26%),
+          radial-gradient(circle at 82% 16%, rgba(255, 207, 125, 0.1), transparent 24%),
+          linear-gradient(135deg, var(--bg-1), var(--bg-2) 48%, #05050a);
+        color: var(--text);
+      }
+
+      a { color: inherit; text-decoration: none; }
+
+      .shell {
+        width: min(1240px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 24px 0 44px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #9d4edd, #ffcf7d);
+        color: #130f18;
+        font-weight: 900;
+        box-shadow: 0 18px 34px rgba(157, 78, 221, 0.28);
+      }
+
+      .title h1,
+      .section h2,
+      .section h3 {
+        margin: 0;
+      }
+
+      .title p,
+      .muted {
+        color: var(--muted);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 32px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--line);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+        gap: 18px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        backdrop-filter: blur(16px);
+        box-shadow: 0 22px 58px rgba(0, 0, 0, 0.42);
+      }
+
+      .card.pad { padding: 20px; }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .metric {
+        padding: 16px;
+        border-radius: 18px;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 30px;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .grid-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1.3fr 0.8fr 0.7fr 0.6fr;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.055);
+        border: 1px solid var(--line);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 26px;
+        padding: 0 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .pill.low { color: var(--good); }
+      .pill.medium { color: var(--warn); }
+      .pill.high { color: var(--bad); }
+
+      .field-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 8px;
+      }
+
+      label span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      input,
+      textarea,
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--field);
+        color: var(--text);
+        padding: 12px 14px;
+        outline: none;
+      }
+
+      input::placeholder,
+      textarea::placeholder {
+        color: rgba(201, 190, 216, 0.7);
+      }
+
+      input:focus,
+      textarea:focus,
+      select:focus {
+        border-color: rgba(157, 78, 221, 0.72);
+        box-shadow: 0 0 0 3px rgba(157, 78, 221, 0.18);
+      }
+
+      input[readonly],
+      input[disabled],
+      textarea:disabled,
+      select:disabled {
+        background: rgba(8, 6, 14, 0.84) !important;
+        color: rgba(251, 248, 255, 0.74);
+        opacity: 1;
+      }
+
+      select option {
+        background: #171123;
+        color: #fbf8ff;
+      }
+
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover,
+      input:-webkit-autofill:focus {
+        -webkit-text-fill-color: var(--text);
+        box-shadow: 0 0 0 1000px #120d1f inset;
+        caret-color: var(--text);
+      }
+
+      textarea { min-height: 96px; resize: vertical; }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: 14px;
+        cursor: pointer;
+        font-weight: 800;
+      }
+
+      .button.primary { background: linear-gradient(135deg, #9d4edd, #6d28d9); color: white; }
+      .button.secondary { background: rgba(255, 255, 255, 0.1); color: var(--text); border: 1px solid var(--line); }
+
+      .sync-panel {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 18px;
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(135, 212, 147, 0.08);
+      }
+
+      .sync-panel strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--bad);
+        box-shadow: 0 0 0 4px rgba(232, 111, 134, 0.14);
+      }
+
+      .status-dot.live {
+        background: var(--good);
+        box-shadow: 0 0 0 4px rgba(135, 212, 147, 0.14);
+      }
+
+      .login-overlay {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: rgba(7, 6, 12, 0.74);
+        backdrop-filter: blur(10px);
+        z-index: 30;
+      }
+
+      .login-panel {
+        width: min(540px, calc(100% - 24px));
+        padding: 24px;
+      }
+
+      .event-log {
+        display: grid;
+        gap: 10px;
+        max-height: 380px;
+        overflow: auto;
+        padding-right: 4px;
+      }
+
+      .event-item {
+        display: grid;
+        gap: 4px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+      }
+
+      .split {
+        display: grid;
+        gap: 18px;
+      }
+
+      @media (max-width: 1080px) {
+        .layout,
+        .metrics,
+        .grid-2,
+        .field-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Secure Username/Password Admin Auth Overlay (Feature 5) -->
+    <div id="loginOverlay" class="login-overlay">
+      <section class="card login-panel">
+        <div class="badge">Secure Admin Gateway</div>
+        <h1 style="margin: 14px 0 8px; font-size: clamp(30px, 5vw, 44px);">แผงควบคุมแอดมิน</h1>
+        <p class="muted" style="line-height: 1.7; margin-top: 0;">
+          กรอกบัญชีผู้ใช้หลังบ้านเพื่อล็อกอินเข้าสู่ระบบจัดการเกม สั่งงาน คูปอง และตรวจสอบออเดอร์ของลีดลูกค้า
+        </p>
+        <div class="field-grid" style="margin-top: 16px;">
+          <label class="field full">
+            <span>Username</span>
+            <input id="adminUsernameInput" type="text" placeholder="admin" autocomplete="username" />
+          </label>
+          <label class="field full">
+            <span>Password</span>
+            <input id="adminPasswordInput" type="password" placeholder="รหัสผ่านแอดมิน" autocomplete="current-password" />
+          </label>
+          <label class="field full">
+            <span>สถานะ</span>
+            <input id="loginStatus" value="กรุณากรอกข้อมูลเข้าสู่ระบบ" disabled style="background: rgba(0,0,0,0.18);" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="unlockButton" class="button primary" type="button">เข้าสู่ระบบ</button>
+          <a class="button secondary" href="./index.html">กลับหน้าหลัก</a>
+        </div>
+      </section>
+    </div>
+
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">GS</div>
+          <div class="title">
+            <h1>Game Services Admin</h1>
+            <p>ควบคุมเกม แพ็คเกจ บล็อกประกาศ คูปองส่วนลด และออเดอร์ลูกค้าแบบครบวงจร</p>
+          </div>
+        </div>
+        <div class="badge">
+          <span id="statusDot" class="status-dot"></span>
+          <span id="realtimeStatus">offline</span>
+        </div>
+      </header>
+
+      <section class="sync-panel">
+        <div>
+          <strong id="mainSyncTitle">เชื่อมกับเว็บหลัก local</strong>
+          <span id="mainSyncStatus" class="muted">ข้อมูลใน admin จะอัปเดตหน้าเว็บหลักผ่าน backend เดียวกัน</span>
+        </div>
+        <div class="actions" style="margin: 0;">
+          <button id="exportStaticButton" class="button primary" type="button">สร้างไฟล์อัป Netlify</button>
+          <a id="openMainSiteButton" class="button secondary" href="http://127.0.0.1:3000/" target="_blank" rel="noopener noreferrer">เปิดเว็บหลัก</a>
+        </div>
+      </section>
+
+      <section class="section card pad" style="margin-bottom: 18px;">
+        <h2>Production Control</h2>
+        <div class="field-grid" style="margin-top: 14px;">
+          <label>
+            <span>Backend API</span>
+            <input id="backendApiUrl" readonly />
+          </label>
+          <label>
+            <span>Backend status</span>
+            <input id="backendHealthStatus" readonly value="รอตรวจสอบ" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="checkBackendButton" class="button secondary" type="button">ตรวจ backend</button>
+          <button id="backupDatabaseButton" class="button secondary" type="button">สำรองฐานข้อมูล</button>
+          <button id="exportExcelButton" class="button secondary" type="button">Export Excel</button>
+          <button id="testTelegramButton" class="button secondary" type="button">ทดสอบ Telegram</button>
+        </div>
+      </section>
+
+      <section class="section card pad" style="margin-bottom: 18px;">
+        <div class="metrics">
+          <article class="metric"><span class="muted">เกมทั้งหมด</span><strong id="metricGames">0</strong></article>
+          <article class="metric"><span class="muted">แพ็คทั้งหมด</span><strong id="metricPackages">0</strong></article>
+          <article class="metric"><span class="muted">ออเดอร์ลีดใหม่</span><strong id="metricNewLeads">0</strong></article>
+          <article class="metric"><span class="muted">หมวดหมู่</span><strong id="metricCategories">0</strong></article>
+        </div>
+      </section>
+
+      <section class="layout">
+        <div class="split">
+          <section class="card pad section">
+            <h2>AI Manager Insight</h2>
+            <p id="insightText" class="muted">กำลังวิเคราะห์ข้อมูลแดชบอร์ด...</p>
+            <div id="channelSummary" class="grid-list" style="margin-top: 14px;"></div>
+          </section>
+
+          <section class="card pad section">
+            <h2>เกมเด่นและความเสี่ยง</h2>
+            <div id="topGamesList" class="grid-list" style="margin-top: 14px;"></div>
+          </section>
+
+          <!-- Order Tracking Management View (Feature 3 & Feature 2 status) -->
+          <section class="card pad section">
+            <h2>ออเดอร์และการเงินล่าสุด</h2>
+            <div id="recentOrders" class="event-log" style="margin-top: 14px; max-height: 480px;"></div>
+          </section>
+
+          <section class="card pad section">
+            <h2>ข้อมูลเรียลไทม์</h2>
+            <div class="actions" style="margin-top: 12px;">
+              <span class="badge">EventSource connected</span>
+              <button id="refreshButton" class="button secondary" type="button">รีเฟรชทันที</button>
+            </div>
+            <div id="eventLog" class="event-log" style="margin-top: 14px;"></div>
+          </section>
+        </div>
+
+        <div class="split">
+          <!-- Discount Coupon Management (Feature 6) -->
+          <section class="card pad section">
+            <h2>จัดการคูปองส่วนลด</h2>
+            <div class="field-grid" style="margin-top: 14px;">
+              <label>
+                <span>เลือกคูปอง</span>
+                <select id="couponSelect"></select>
+              </label>
+              <label>
+                <span>โค้ดคูปอง</span>
+                <input id="couponCode" placeholder="เช่น DISCOUNT50" />
+              </label>
+              <label>
+                <span>ประเภทส่วนลด</span>
+                <select id="couponDiscountType">
+                  <option value="fixed">จำนวนเงินคงที่ (บาท)</option>
+                  <option value="percentage">เปอร์เซ็นต์ (%)</option>
+                </select>
+              </label>
+              <label>
+                <span>มูลค่าส่วนลด</span>
+                <input id="couponDiscountValue" type="number" placeholder="50" />
+              </label>
+              <label>
+                <span>ยอดสั่งซื้อขั้นต่ำ (บาท)</span>
+                <input id="couponMinSpend" type="number" placeholder="0" />
+              </label>
+              <label>
+                <span>สถานะคูปอง</span>
+                <select id="couponActive"><option value="true">เปิดใช้งาน</option><option value="false">ปิดใช้งาน</option></select>
+              </label>
+            </div>
+            <div class="actions">
+              <button id="saveCouponButton" class="button primary" type="button">บันทึกคูปอง</button>
+              <button id="newCouponButton" class="button secondary" type="button">คูปองใหม่</button>
+            </div>
+          </section>
+
+          <section class="card pad section">
+            <h2>แก้โพสต์เกม</h2>
+            <div class="field-grid" style="margin-top: 14px;">
+              <label>
+                <span>เลือกเกม</span>
+                <select id="gameSelect"></select>
+              </label>
+              <label>
+                <span>ชื่อเกม</span>
+                <input id="gameName" />
+              </label>
+              <label>
+                <span>Slug</span>
+                <input id="gameSlug" />
+              </label>
+              <label>
+                <span>หมวดหมู่</span>
+                <input id="gameCategory" />
+              </label>
+              <label>
+                <span>แสดงในแค็ตตาล็อก</span>
+                <select id="gameCatalogType">
+                  <option value="">ไม่แสดง</option>
+                  <option value="TD">TD</option>
+                  <option value="RPG">RPG</option>
+                </select>
+              </label>
+              <label class="full">
+                <span>ข้อมูลอ้างอิงในการ์ด</span>
+                <input id="gameReferenceTitle" placeholder="เช่น Free Purchase / Add Currency" />
+              </label>
+              <label class="full">
+                <span>รูปตัวอย่างเกมเพย์ / Play Store image URL</span>
+                <input id="gamePlayImage" placeholder="https://play-lh.googleusercontent.com/..." />
+              </label>
+              <label class="full">
+                <span>อัปโหลดรูปจากเครื่อง</span>
+                <input id="gamePlayImageFile" type="file" accept="image/png,image/jpeg,image/webp" />
+                <small id="gamePlayImageStatus" class="muted">รองรับ PNG, JPG, WebP ขนาดไม่เกิน 3MB</small>
+                <img id="gamePlayImagePreview" alt="" style="display:none; width:min(360px, 100%); margin-top:10px; border-radius:8px; border:1px solid rgba(255,255,255,.18);" />
+              </label>
+              <label class="full">
+                <span>ลิงก์ Play Store</span>
+                <input id="gamePlayStore" placeholder="https://play.google.com/store/apps/details?id=..." />
+              </label>
+              <label class="full">
+                <span>คำอธิบาย</span>
+                <textarea id="gameDescription"></textarea>
+              </label>
+              <label>
+                <span>รับประกัน (วัน)</span>
+                <input id="gameWarrantyDays" inputmode="numeric" />
+              </label>
+              <label>
+                <span>หมายเหตุรับประกัน</span>
+                <input id="gameWarrantyNote" />
+              </label>
+              <label>
+                <span>Android</span>
+                <select id="gameAndroid"><option value="true">เปิด</option><option value="false">ปิด</option></select>
+              </label>
+              <label>
+                <span>iOS</span>
+                <select id="gameIos"><option value="true">เปิด</option><option value="false">ปิด</option></select>
+              </label>
+              <label>
+                <span>Featured</span>
+                <select id="gameFeatured"><option value="true">ใช่</option><option value="false">ไม่</option></select>
+              </label>
+              <label>
+                <span>Active</span>
+                <select id="gameActive"><option value="true">เปิด</option><option value="false">ปิด</option></select>
+              </label>
+            </div>
+            <div class="actions">
+              <button id="saveGameButton" class="button primary" type="button">บันทึกเกม</button>
+              <button id="newGameButton" class="button secondary" type="button">เกมใหม่</button>
+            </div>
+          </section>
+
+          <section class="card pad section">
+            <h2>แก้แพ็คบริการ</h2>
+            <div class="field-grid" style="margin-top: 14px;">
+              <label>
+                <span>เลือกเกม</span>
+                <select id="packageGameSelect"></select>
+              </label>
+              <label>
+                <span>เลือกแพ็ค</span>
+                <select id="packageSelect"></select>
+              </label>
+              <label>
+                <span>ชื่อแพ็ค</span>
+                <input id="packageName" />
+              </label>
+              <label>
+                <span>ราคา</span>
+                <input id="packagePrice" inputmode="numeric" />
+              </label>
+              <label>
+                <span>Badge</span>
+                <input id="packageBadge" />
+              </label>
+              <label>
+                <span>Sort order</span>
+                <input id="packageSortOrder" inputmode="numeric" />
+              </label>
+              <label class="full">
+                <span>รายการภายในแพ็ค</span>
+                <textarea id="packageItems"></textarea>
+              </label>
+              <label class="full">
+                <span>รายละเอียด</span>
+                <textarea id="packageDescription"></textarea>
+              </label>
+              <label class="full">
+                <span>หมายเหตุแอดมิน</span>
+                <textarea id="packageNotes"></textarea>
+              </label>
+              <label>
+                <span>แนะนำ</span>
+                <select id="packageRecommended"><option value="true">ใช่</option><option value="false">ไม่</option></select>
+              </label>
+              <label>
+                <span>Active</span>
+                <select id="packageActive"><option value="true">เปิด</option><option value="false">ปิด</option></select>
+              </label>
+            </div>
+            <div class="actions">
+              <button id="savePackageButton" class="button primary" type="button">บันทึกแพ็ค</button>
+              <button id="newPackageButton" class="button secondary" type="button">แพ็คใหม่</button>
+            </div>
+          </section>
+
+          <section class="card pad section">
+            <h2>จัดการโพสต์ประกาศ</h2>
+            <div class="field-grid" style="margin-top: 14px;">
+              <label>
+                <span>เลือกโพสต์</span>
+                <select id="postSelect"></select>
+              </label>
+              <label class="full">
+                <span>หัวข้อ</span>
+                <input id="postTitle" />
+              </label>
+              <label class="full">
+                <span>เนื้อหา</span>
+                <textarea id="postContent"></textarea>
+              </label>
+              <label>
+                <span>ประเภท</span>
+                <select id="postType">
+                  <option value="announcement">ประกาศ</option>
+                  <option value="promotion">โปรโมชั่น</option>
+                  <option value="maintenance">ปิดปรับปรุง</option>
+                </select>
+              </label>
+              <label>
+                <span>สถานะ</span>
+                <select id="postActive"><option value="true">เปิด</option><option value="false">ปิด</option></select>
+              </label>
+            </div>
+            <div class="actions">
+              <button id="savePostButton" class="button primary" type="button">บันทึกโพสต์</button>
+              <button id="newPostButton" class="button secondary" type="button">โพสต์ใหม่</button>
+            </div>
+          </section>
+
+          <section class="card pad section">
+            <h2>ความเสี่ยงที่ต้องจับตา</h2>
+            <div id="riskList" class="event-log" style="margin-top: 14px;"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const API_BASE_URL = window.API_BASE_URL || (window.location.protocol === 'file:' ? 'http://localhost:3000' : window.location.origin);
+      const STORAGE_KEY = 'gs-admin-session-token';
+
+      const ui = {
+        loginOverlay: document.getElementById('loginOverlay'),
+        adminUsernameInput: document.getElementById('adminUsernameInput'),
+        adminPasswordInput: document.getElementById('adminPasswordInput'),
+        loginStatus: document.getElementById('loginStatus'),
+        unlockButton: document.getElementById('unlockButton'),
+        refreshButton: document.getElementById('refreshButton'),
+        realtimeStatus: document.getElementById('realtimeStatus'),
+        statusDot: document.getElementById('statusDot'),
+        metricGames: document.getElementById('metricGames'),
+        metricPackages: document.getElementById('metricPackages'),
+        metricNewLeads: document.getElementById('metricNewLeads'),
+        metricCategories: document.getElementById('metricCategories'),
+        insightText: document.getElementById('insightText'),
+        channelSummary: document.getElementById('channelSummary'),
+        topGamesList: document.getElementById('topGamesList'),
+        eventLog: document.getElementById('eventLog'),
+        riskList: document.getElementById('riskList'),
+        recentOrders: document.getElementById('recentOrders'),
+        postSelect: document.getElementById('postSelect'),
+        gameSelect: document.getElementById('gameSelect'),
+        packageGameSelect: document.getElementById('packageGameSelect'),
+        packageSelect: document.getElementById('packageSelect'),
+        couponSelect: document.getElementById('couponSelect'),
+        backendApiUrl: document.getElementById('backendApiUrl'),
+        backendHealthStatus: document.getElementById('backendHealthStatus'),
+        checkBackendButton: document.getElementById('checkBackendButton'),
+        backupDatabaseButton: document.getElementById('backupDatabaseButton'),
+        exportExcelButton: document.getElementById('exportExcelButton'),
+        testTelegramButton: document.getElementById('testTelegramButton')
+      };
+
+      const formFields = {
+        gameName: document.getElementById('gameName'),
+        gameSlug: document.getElementById('gameSlug'),
+        gameCategory: document.getElementById('gameCategory'),
+        gameCatalogType: document.getElementById('gameCatalogType'),
+        gameReferenceTitle: document.getElementById('gameReferenceTitle'),
+        gamePlayImage: document.getElementById('gamePlayImage'),
+        gamePlayImageFile: document.getElementById('gamePlayImageFile'),
+        gamePlayImageStatus: document.getElementById('gamePlayImageStatus'),
+        gamePlayImagePreview: document.getElementById('gamePlayImagePreview'),
+        gamePlayStore: document.getElementById('gamePlayStore'),
+        gameDescription: document.getElementById('gameDescription'),
+        gameWarrantyDays: document.getElementById('gameWarrantyDays'),
+        gameWarrantyNote: document.getElementById('gameWarrantyNote'),
+        gameAndroid: document.getElementById('gameAndroid'),
+        gameIos: document.getElementById('gameIos'),
+        gameFeatured: document.getElementById('gameFeatured'),
+        gameActive: document.getElementById('gameActive'),
+        packageName: document.getElementById('packageName'),
+        packagePrice: document.getElementById('packagePrice'),
+        packageBadge: document.getElementById('packageBadge'),
+        packageSortOrder: document.getElementById('packageSortOrder'),
+        packageItems: document.getElementById('packageItems'),
+        packageDescription: document.getElementById('packageDescription'),
+        packageNotes: document.getElementById('packageNotes'),
+        packageRecommended: document.getElementById('packageRecommended'),
+        packageActive: document.getElementById('packageActive'),
+        couponCode: document.getElementById('couponCode'),
+        couponDiscountType: document.getElementById('couponDiscountType'),
+        couponDiscountValue: document.getElementById('couponDiscountValue'),
+        couponMinSpend: document.getElementById('couponMinSpend'),
+        couponActive: document.getElementById('couponActive')
+      };
+
+      if (ui.backendApiUrl) {
+        ui.backendApiUrl.value = API_BASE_URL || window.location.origin;
+      }
+
+      let adminToken = sessionStorage.getItem(STORAGE_KEY) || '';
+      let games = [];
+      let posts = [];
+      let orders = [];
+      let coupons = [];
+      let eventSource = null;
+
+      function apiUrl(path) {
+        return `${API_BASE_URL}${path}`;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function escapeAttr(value) {
+        return escapeHtml(value);
+      }
+
+      function safeRisk(value) {
+        return ["low", "medium", "high"].includes(value) ? value : "medium";
+      }
+
+      function slugify(value) {
+        return String(value || '')
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9ก-๙]+/gi, '-')
+          .replace(/^-+|-+$/g, '')
+          .replace(/-{2,}/g, '-') || 'game';
+      }
+
+      function authHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
+        return headers;
+      }
+
+      function authUrl(path) {
+        const url = apiUrl(path);
+        if (!adminToken) return url;
+        const separator = url.includes('?') ? '&' : '?';
+        return `${url}${separator}token=${encodeURIComponent(adminToken)}`;
+      }
+
+      function setRealtimeState(online, label) {
+        ui.realtimeStatus.textContent = label;
+        ui.statusDot.classList.toggle('live', online);
+      }
+
+      function addEventLogEntry(title, detail) {
+        const item = document.createElement('div');
+        item.className = 'event-item';
+        const titleEl = document.createElement('strong');
+        titleEl.textContent = title;
+        const detailEl = document.createElement('span');
+        detailEl.className = 'muted';
+        detailEl.textContent = detail;
+        item.append(titleEl, detailEl);
+        ui.eventLog.prepend(item);
+        while (ui.eventLog.children.length > 12) {
+          ui.eventLog.removeChild(ui.eventLog.lastElementChild);
+        }
+      }
+
+      function setMainSyncStatus(message, isFresh = true) {
+        const title = document.getElementById('mainSyncTitle');
+        const status = document.getElementById('mainSyncStatus');
+        if (title) title.textContent = isFresh ? 'เว็บหลัก local อัปเดตแล้ว' : 'รอซิงก์เว็บหลัก';
+        if (status) status.textContent = message;
+      }
+
+      function optionValue(item, index) {
+        return item.id || item.slug || item.name || String(index);
+      }
+
+      function mapGames(apiGames) {
+        return apiGames.map((game) => ({
+          id: game.id,
+          name: game.name,
+          slug: game.slug,
+          category: game.category?.name || 'Uncategorized',
+          description: game.description || '',
+          catalogType: game.catalogType || '',
+          referenceTitle: game.referenceTitle || '',
+          playImage: game.playImage || '',
+          playStore: game.playStore || '',
+          warrantyDays: game.warrantyDays || 7,
+          warrantyNote: game.warrantyNote || '',
+          supportedAndroid: Boolean(game.supportedAndroid),
+          supportedIos: Boolean(game.supportedIos),
+          isFeatured: Boolean(game.isFeatured),
+          isActive: game.isActive !== false,
+          packages: Array.isArray(game.packages)
+            ? game.packages.map((pkg) => ({
+                id: pkg.id,
+                name: pkg.name,
+                price: Number(pkg.price),
+                badge: pkg.badge || '',
+                sortOrder: pkg.sortOrder || 0,
+                items: Array.isArray(pkg.items) ? pkg.items : (Array.isArray(pkg.highlights) ? pkg.highlights : []),
+                description: pkg.description || '',
+                adminNotes: pkg.adminNotes || '',
+                isRecommended: Boolean(pkg.isRecommended),
+                isActive: pkg.isActive !== false
+              }))
+            : []
+        }));
+      }
+
+      function readGameSelection() {
+        if (ui.gameSelect.value === 'new') return null;
+        return games.find((game, index) => optionValue(game, index) === ui.gameSelect.value) || games[0];
+      }
+
+      function readPackageSelection() {
+        const game = games.find((item, index) => optionValue(item, index) === ui.packageGameSelect.value) || games[0];
+        const pkg = ui.packageSelect.value === 'new'
+          ? null
+          : game?.packages.find((item, index) => optionValue(item, index) === ui.packageSelect.value) || game?.packages[0];
+        return { game, pkg };
+      }
+
+      function renderSelectors() {
+        ui.gameSelect.innerHTML = games.map((game, index) => `<option value="${escapeAttr(optionValue(game, index))}">${escapeHtml(game.name)}</option>`).join('');
+        ui.packageGameSelect.innerHTML = games.map((game, index) => `<option value="${escapeAttr(optionValue(game, index))}">${escapeHtml(game.name)}</option>`).join('');
+        renderPackageSelector();
+      }
+
+      function renderPackageSelector() {
+        const game = games.find((item, index) => optionValue(item, index) === ui.packageGameSelect.value) || games[0];
+        if (!game) return;
+
+        ui.packageSelect.innerHTML = game.packages.map((pkg, index) => `<option value="${escapeAttr(optionValue(pkg, index))}">${escapeHtml(pkg.name)}</option>`).join('');
+      }
+
+      function fillGameForm(game) {
+        if (!game) return;
+        ui.gameSelect.value = optionValue(game, 0);
+        formFields.gameName.value = game.name || '';
+        formFields.gameSlug.value = game.slug || slugify(game.name);
+        formFields.gameCategory.value = game.category || '';
+        formFields.gameCatalogType.value = game.catalogType || '';
+        formFields.gameReferenceTitle.value = game.referenceTitle || '';
+        formFields.gamePlayImage.value = game.playImage || '';
+        setGameImagePreview(game.playImage || '');
+        if (formFields.gamePlayImageStatus) formFields.gamePlayImageStatus.textContent = game.playImage ? 'ใช้รูปนี้บนหน้าเว็บ' : 'ยังไม่มีรูป เลือกไฟล์หรือใส่ URL ได้';
+        if (formFields.gamePlayImageFile) formFields.gamePlayImageFile.value = '';
+        formFields.gamePlayStore.value = game.playStore || '';
+        formFields.gameDescription.value = game.description || '';
+        formFields.gameWarrantyDays.value = game.warrantyDays || 7;
+        formFields.gameWarrantyNote.value = game.warrantyNote || '';
+        formFields.gameAndroid.value = String(game.supportedAndroid);
+        formFields.gameIos.value = String(game.supportedIos);
+        formFields.gameFeatured.value = String(game.isFeatured);
+        formFields.gameActive.value = String(game.isActive);
+      }
+
+      function fillPackageForm(game, pkg) {
+        if (!game || !pkg) return;
+        ui.packageGameSelect.value = optionValue(game, 0);
+        renderPackageSelector();
+        ui.packageSelect.value = optionValue(pkg, 0);
+        formFields.packageName.value = pkg.name || '';
+        formFields.packagePrice.value = pkg.price || 0;
+        formFields.packageBadge.value = pkg.badge || '';
+        formFields.packageSortOrder.value = pkg.sortOrder || 0;
+        formFields.packageItems.value = (pkg.items || []).join('\n');
+        formFields.packageDescription.value = pkg.description || '';
+        formFields.packageNotes.value = pkg.adminNotes || '';
+        formFields.packageRecommended.value = String(pkg.isRecommended);
+        formFields.packageActive.value = String(pkg.isActive);
+      }
+
+      function newGame() {
+        const option = new Option('เกมใหม่...', 'new', true, true);
+        ui.gameSelect.append(option);
+        ui.gameSelect.value = 'new';
+        formFields.gameName.value = '';
+        formFields.gameSlug.value = '';
+        formFields.gameCategory.value = 'Mobile';
+        formFields.gameCatalogType.value = '';
+        formFields.gameReferenceTitle.value = '';
+        formFields.gamePlayImage.value = '';
+        setGameImagePreview('');
+        if (formFields.gamePlayImageStatus) formFields.gamePlayImageStatus.textContent = 'รองรับ PNG, JPG, WebP ขนาดไม่เกิน 4MB';
+        if (formFields.gamePlayImageFile) formFields.gamePlayImageFile.value = '';
+        formFields.gamePlayStore.value = '';
+        formFields.gameDescription.value = '';
+        formFields.gameWarrantyDays.value = 7;
+        formFields.gameWarrantyNote.value = 'รับประกันตามเงื่อนไขร้าน 7 วัน';
+        formFields.gameAndroid.value = 'true';
+        formFields.gameIos.value = 'true';
+        formFields.gameFeatured.value = 'false';
+        formFields.gameActive.value = 'true';
+      }
+
+      function newPackage() {
+        const game = games.find((item, index) => optionValue(item, index) === ui.packageGameSelect.value) || games[0];
+        if (!game) {
+          alert('ต้องมีเกมก่อนจึงจะสร้างแพ็คได้');
+          return;
+        }
+        const option = new Option('แพ็คใหม่...', 'new', true, true);
+        ui.packageSelect.append(option);
+        ui.packageSelect.value = 'new';
+        formFields.packageName.value = '';
+        formFields.packagePrice.value = 0;
+        formFields.packageBadge.value = '';
+        formFields.packageSortOrder.value = 0;
+        formFields.packageItems.value = '';
+        formFields.packageDescription.value = '';
+        formFields.packageNotes.value = '';
+        formFields.packageRecommended.value = 'false';
+        formFields.packageActive.value = 'true';
+      }
+
+      function renderDashboard(data) {
+        const summary = data?.summary || {};
+        ui.metricGames.textContent = summary.totalGames ?? 0;
+        ui.metricPackages.textContent = summary.totalPackages ?? 0;
+        ui.metricNewLeads.textContent = summary.newLeads ?? 0;
+        ui.metricCategories.textContent = summary.totalCategories ?? 0;
+
+        const topGames = Array.isArray(data?.topGames) ? data.topGames : [];
+        const riskSummary = Array.isArray(data?.riskSummary) ? data.riskSummary : [];
+        const channels = data?.channelCounts || {};
+
+        ui.insightText.textContent = topGames.length
+          ? `เกมยอดฮิตคือ ${topGames[0].name}. กลุ่มผู้เล่นหลักคือ ${topGames[0].players}. ควรโปรโมทแพ็คเกจเด่นในช่วงนี้.`
+          : 'ไม่มีข้อมูลแดชบอร์ด';
+
+        ui.channelSummary.innerHTML = Object.entries(channels).length
+          ? Object.entries(channels).map(([name, count]) => `<div class="event-item"><strong>${escapeHtml(name)}</strong><span class="muted">${Number(count || 0)} ออเดอร์</span></div>`).join('')
+          : '<div class="event-item"><strong>ยังไม่มีข้อมูลช่องทาง</strong></div>';
+
+        ui.topGamesList.innerHTML = topGames.length
+          ? topGames.map((game) => `
+              <div class="row">
+                <div><strong>${escapeHtml(game.name)}</strong><br /><span class="muted">${escapeHtml(game.category)}</span></div>
+                <div>${escapeHtml(game.players)}</div>
+                <div>${Number(game.leadCount || 0)} leads</div>
+                <div><span class="pill ${safeRisk(game.risk)}">${escapeHtml(game.risk)}</span></div>
+              </div>
+            `).join('')
+          : '<div class="event-item"><strong>ยังไม่มีเกมจัดอันดับ</strong></div>';
+
+        ui.riskList.innerHTML = riskSummary.length
+          ? riskSummary.map((game) => `
+              <div class="event-item">
+                <strong>${escapeHtml(game.name)}</strong>
+                <span class="muted">${escapeHtml(game.category)} · ${escapeHtml(game.players)}</span>
+                <span class="pill ${safeRisk(game.risk)}">${escapeHtml(game.risk)}</span>
+              </div>
+            `).join('')
+          : '<div class="event-item"><strong>ยังไม่มีรายงานความเสี่ยง</strong></div>';
+      }
+
+      async function adminFetch(path, options = {}) {
+        const response = await fetch(apiUrl(path), {
+          ...options,
+          credentials: 'same-origin',
+          headers: {
+            ...authHeaders(),
+            ...(options.headers || {})
+          }
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Request failed');
+        }
+        return result;
+      }
+
+      async function checkBackendHealth() {
+        if (ui.backendApiUrl) {
+          ui.backendApiUrl.value = API_BASE_URL || window.location.origin;
+        }
+        if (ui.backendHealthStatus) {
+          ui.backendHealthStatus.value = 'กำลังตรวจ backend...';
+        }
+        try {
+          const response = await fetch(apiUrl('/health'), { cache: 'no-store' });
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Health check failed');
+          }
+          const data = result.data || {};
+          ui.backendHealthStatus.value = `ออนไลน์ • DB ${data.database ? 'พร้อม' : 'ไม่พร้อม'} • ${data.time || '-'}`;
+          setMainSyncStatus(`Backend พร้อมใช้งาน: ${API_BASE_URL || window.location.origin}`);
+        } catch (error) {
+          ui.backendHealthStatus.value = 'เชื่อม backend ไม่สำเร็จ';
+          setMainSyncStatus('ยังเชื่อม backend ไม่สำเร็จ ตรวจ PUBLIC_API_BASE_URL / CORS', false);
+        }
+      }
+
+      function backupDatabase() {
+        if (!adminToken) {
+          alert('กรุณาเข้าสู่ระบบแอดมินก่อนสำรองฐานข้อมูล');
+          return;
+        }
+        window.open(authUrl('/api/admin-backup'), '_blank', 'noopener,noreferrer');
+      }
+
+      function exportExcel() {
+        if (!adminToken) {
+          alert('กรุณาเข้าสู่ระบบแอดมินก่อน Export Excel');
+          return;
+        }
+        addEventLogEntry('Excel export started', 'Downloading operations workbook');
+        window.open(authUrl('/api/admin-export-excel'), '_blank', 'noopener,noreferrer');
+      }
+
+      async function testTelegramNotification() {
+        if (!adminToken) {
+          alert('กรุณาเข้าสู่ระบบแอดมินก่อนทดสอบ Telegram');
+          return;
+        }
+        if (ui.testTelegramButton) {
+          ui.testTelegramButton.disabled = true;
+          ui.testTelegramButton.textContent = 'กำลังทดสอบ...';
+        }
+        try {
+          await adminFetch('/api/admin-test-telegram', { method: 'POST', body: JSON.stringify({}) });
+          addEventLogEntry('Telegram test sent', 'ตรวจข้อความใน Telegram ได้เลย');
+          alert('ส่งข้อความทดสอบ Telegram แล้ว');
+        } catch (error) {
+          alert(`ทดสอบ Telegram ไม่สำเร็จ: ${error.message}`);
+        } finally {
+          if (ui.testTelegramButton) {
+            ui.testTelegramButton.disabled = false;
+            ui.testTelegramButton.textContent = 'ทดสอบ Telegram';
+          }
+        }
+      }
+
+      function setGameImagePreview(url) {
+        if (!formFields.gamePlayImagePreview) return;
+        const value = String(url || '').trim();
+        if (!value) {
+          formFields.gamePlayImagePreview.style.display = 'none';
+          formFields.gamePlayImagePreview.removeAttribute('src');
+          return;
+        }
+        formFields.gamePlayImagePreview.src = value.startsWith('/') ? apiUrl(value) : value;
+        formFields.gamePlayImagePreview.style.display = 'block';
+      }
+
+      function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('อ่านไฟล์รูปไม่สำเร็จ'));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function uploadGameImage(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 4 * 1024 * 1024) {
+          formFields.gamePlayImageStatus.textContent = 'รองรับ PNG, JPG, WebP ขนาดไม่เกิน 4MB';
+          event.target.value = '';
+          return;
+        }
+        formFields.gamePlayImageStatus.textContent = 'กำลังอัปโหลดรูป...';
+        try {
+          const image = await readFileAsDataUrl(file);
+          const result = await adminFetch('/api/admin-upload-image', {
+            method: 'POST',
+            body: JSON.stringify({ image, fileName: file.name })
+          });
+          const url = result.data?.url || '';
+          formFields.gamePlayImage.value = url;
+          setGameImagePreview(url);
+          formFields.gamePlayImageStatus.textContent = `อัปโหลดแล้ว: ${url}`;
+          addEventLogEntry('Image uploaded', url);
+        } catch (error) {
+          formFields.gamePlayImageStatus.textContent = `อัปโหลดรูปไม่สำเร็จ: ${error.message}`;
+        }
+      }
+
+      async function loadGames() {
+        const result = await fetch(apiUrl('/api/games')).then((response) => response.json());
+        if (!Array.isArray(result.data)) return;
+        games = mapGames(result.data);
+        renderSelectors();
+        if (games.length) {
+          fillGameForm(games[0]);
+          fillPackageForm(games[0], games[0].packages[0]);
+        }
+      }
+
+      async function loadPosts() {
+        const result = await adminFetch('/api/admin-posts');
+        if (!Array.isArray(result.data)) return;
+        posts = result.data;
+        renderPostSelector();
+        if (posts.length) {
+          fillPostForm(posts[0]);
+        }
+      }
+
+      async function loadOrders() {
+        const result = await adminFetch('/api/admin-orders');
+        if (!Array.isArray(result.data)) return;
+        orders = result.data;
+        renderOrders();
+      }
+
+      function renderPostSelector() {
+        ui.postSelect.innerHTML = posts.map((post) => `<option value="${escapeAttr(post.id)}">${escapeHtml(post.title)}</option>`).join('');
+      }
+
+      function fillPostForm(post) {
+        if (!post) return;
+        ui.postSelect.value = post.id;
+        document.getElementById('postTitle').value = post.title || '';
+        document.getElementById('postContent').value = post.content || '';
+        document.getElementById('postType').value = post.type || 'announcement';
+        document.getElementById('postActive').value = String(post.isActive !== false);
+      }
+
+      // Order State Management UI (Feature 3 & 2)
+      function renderOrders() {
+        ui.recentOrders.innerHTML = orders.length
+          ? orders.map((order) => {
+              const statusOptions = ["pending", "processing", "completed", "cancelled"];
+              const status = statusOptions.includes(order.status) ? order.status : "pending";
+              const selectOptions = statusOptions.map(st => `<option value="${st}" ${status === st ? 'selected' : ''}>${st.toUpperCase()}</option>`).join('');
+              const orderId = order.id || '';
+              const gameName = order.gameName || order.game_name || '';
+              const packageName = order.packageName || order.package_name || '';
+              const finalPrice = Number(order.final_price ?? order.finalPrice ?? 0);
+              const discountAmount = Number(order.discount_amount ?? order.discountAmount ?? 0);
+              const slipUrl = order.slip_url || order.slipUrl || '';
+              const slipVerified = Boolean(order.slip_verified || order.slipVerified);
+              
+              const slipInfo = slipUrl
+                ? `<button class="pill slip-reference" type="button" data-slip-url="${escapeAttr(slipUrl)}" style="cursor: pointer; text-decoration: underline; border: 0;">สลิป: ${escapeHtml(slipUrl)} (${slipVerified ? 'ตรวจแล้ว' : 'รอเช็ก'})</button>`
+                : `<span class="pill high">ไม่มีสลิป ❌</span>`;
+
+              return `
+              <div class="event-item" style="border-left: 4px solid ${status === 'completed' ? 'var(--good)' : status === 'processing' ? 'var(--warn)' : 'var(--bad)'}; padding: 12px; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap;">
+                  <div>
+                    <strong>${escapeHtml(orderId)} - ${escapeHtml(gameName)}</strong>
+                    <div class="muted">${escapeHtml(packageName)} · 💰 ${finalPrice.toLocaleString('th-TH')} บาท (ส่วนลด ${discountAmount.toLocaleString('th-TH')} บ.)</div>
+                  </div>
+                  <div>
+                    <select class="order-status-select" data-order-id="${escapeAttr(orderId)}" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; width: auto; min-height: auto; background: var(--bg-3); color: var(--text);">
+                      ${selectOptions}
+                    </select>
+                  </div>
+                </div>
+                <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                  ${slipInfo}
+                  <span class="pill">${escapeHtml(order.platform || '-')}</span>
+                  <span class="muted" style="font-size: 11px;">${new Date(order.created_at || order.createdAt).toLocaleString('th-TH')}</span>
+                </div>
+                ${order.customer_note ? `<div class="muted" style="margin-top: 6px; font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 6px;">โน้ตลูกค้า: ${escapeHtml(order.customer_note)}</div>` : ''}
+              </div>
+              `;
+            }).join('')
+          : '<div class="event-item"><strong>ยังไม่มีออเดอร์</strong></div>';
+      }
+
+      async function updateOrderStatus(orderId, newStatus) {
+        try {
+          await adminFetch('/api/admin-orders', {
+            method: 'POST',
+            body: JSON.stringify({ orderId, status: newStatus })
+          });
+          addEventLogEntry('Order updated', `${orderId} -> ${newStatus}`);
+          loadOrders();
+        } catch (err) {
+          alert('ไม่สามารถอัปเดตสถานะออเดอร์ได้: ' + err.message);
+        }
+      }
+
+      // 6. Coupon Management (Feature 6)
+      async function loadCoupons() {
+        const result = await adminFetch('/api/admin-coupons');
+        if (!Array.isArray(result.data)) return;
+        coupons = result.data;
+        renderCouponSelector();
+        if (coupons.length) {
+          fillCouponForm(coupons[0]);
+        }
+      }
+
+      function renderCouponSelector() {
+        ui.couponSelect.innerHTML = coupons.map((c) => {
+          const value = c.discount_type === 'percentage' ? `${Number(c.discount_value || 0)}%` : `${Number(c.discount_value || 0)}บ.`;
+          return `<option value="${escapeAttr(c.id)}">${escapeHtml(c.code)} (${escapeHtml(value)})</option>`;
+        }).join('');
+      }
+
+      function fillCouponForm(coupon) {
+        if (!coupon) return;
+        ui.couponSelect.value = coupon.id;
+        formFields.couponCode.value = coupon.code || '';
+        formFields.couponDiscountType.value = coupon.discount_type || 'fixed';
+        formFields.couponDiscountValue.value = coupon.discount_value || 0;
+        formFields.couponMinSpend.value = coupon.min_spend || 0;
+        formFields.couponActive.value = String(coupon.is_active !== 0);
+      }
+
+      function onCouponSelectionChange() {
+        const coupon = coupons.find(c => c.id === ui.couponSelect.value);
+        fillCouponForm(coupon);
+      }
+
+      function newCoupon() {
+        const option = new Option('สร้างคูปองใหม่...', 'new', true, true);
+        ui.couponSelect.append(option);
+        ui.couponSelect.value = 'new';
+        formFields.couponCode.value = '';
+        formFields.couponDiscountType.value = 'fixed';
+        formFields.couponDiscountValue.value = 0;
+        formFields.couponMinSpend.value = 0;
+        formFields.couponActive.value = 'true';
+      }
+
+      async function saveCoupon() {
+        const couponId = ui.couponSelect.value;
+        const payload = {
+          couponId: couponId && couponId !== 'new' ? couponId : '',
+          code: formFields.couponCode.value.trim(),
+          discountType: formFields.couponDiscountType.value,
+          discountValue: Number(formFields.couponDiscountValue.value),
+          minSpend: Number(formFields.couponMinSpend.value),
+          isActive: formFields.couponActive.value === 'true'
+        };
+
+        try {
+          const result = await adminFetch('/api/admin-coupons', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+          addEventLogEntry('Coupon saved', result.data?.code || payload.code);
+          await loadCoupons();
+        } catch (err) {
+          alert('บันทึกคูปองไม่สำเร็จ: ' + err.message);
+        }
+      }
+
+      async function loadDashboard() {
+        const result = await adminFetch('/api/admin-dashboard');
+        renderDashboard(result.data);
+        addEventLogEntry('Dashboard', 'โหลดข้อมูลล่าสุดเรียบร้อย');
+      }
+
+      function connectRealtime() {
+        if (eventSource) {
+          eventSource.close();
+        }
+
+        eventSource = new EventSource(authUrl('/api/admin-events'), { withCredentials: true });
+        setRealtimeState(false, 'connecting');
+
+        eventSource.addEventListener('ready', () => {
+          setRealtimeState(true, 'online');
+          addEventLogEntry('Realtime', 'connected');
+        });
+
+        eventSource.addEventListener('game.updated', () => {
+          addEventLogEntry('Game updated', 'รับข้อมูลเกมอัปเดตจากหลังบ้าน');
+          loadDashboard();
+          loadGames();
+        });
+
+        eventSource.addEventListener('package.updated', () => {
+          addEventLogEntry('Package updated', 'รับข้อมูลแพ็คเกจอัปเดตจากหลังบ้าน');
+          loadDashboard();
+          loadGames();
+        });
+
+        eventSource.addEventListener('order.created', (event) => {
+          const data = JSON.parse(event.data);
+          addEventLogEntry('Order created', `มีออเดอร์ใหม่เข้ามา: ${data.payload?.id}`);
+          loadDashboard();
+          loadOrders();
+        });
+
+        eventSource.addEventListener('order.updated', () => {
+          loadDashboard();
+          loadOrders();
+        });
+
+        eventSource.onerror = () => {
+          setRealtimeState(false, 'offline');
+          addEventLogEntry('Realtime', 'การเชื่อมต่อขัดข้อง');
+        };
+      }
+
+      // 5. Unlock Admin View with Username / Password authentication (Feature 5)
+      async function unlock() {
+        const username = ui.adminUsernameInput.value.trim();
+        const password = ui.adminPasswordInput.value.trim();
+        
+        if (!username || !password) {
+          ui.loginStatus.value = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';
+          return;
+        }
+
+        ui.loginStatus.value = 'กำลังตรวจสอบสิทธิ์...';
+
+        try {
+          const response = await fetch(apiUrl('/api/admin/login'), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+          const result = await response.json();
+          
+          if (response.ok && result.success) {
+            adminToken = result.data.token || '';
+            if (adminToken) sessionStorage.setItem(STORAGE_KEY, adminToken);
+            ui.loginOverlay.style.display = 'none';
+            
+            // Initial data fetching
+            await loadDashboard();
+            await loadGames();
+            await loadPosts();
+            await loadOrders();
+            await loadCoupons();
+            await checkBackendHealth();
+            connectRealtime();
+          } else {
+            ui.loginStatus.value = result.error || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+          }
+        } catch (err) {
+          ui.loginStatus.value = 'เซิร์ฟเวอร์ขัดข้องในการตรวจสอบล็อกอิน';
+        }
+      }
+
+      async function saveGame() {
+        const currentGame = readGameSelection();
+
+        const payload = {
+          gameId: currentGame?.id || '',
+          name: formFields.gameName.value.trim(),
+          slug: formFields.gameSlug.value.trim(),
+          description: formFields.gameDescription.value.trim(),
+          categoryName: formFields.gameCategory.value.trim(),
+          catalogType: formFields.gameCatalogType.value,
+          referenceTitle: formFields.gameReferenceTitle.value.trim(),
+          playImage: formFields.gamePlayImage.value.trim(),
+          playStore: formFields.gamePlayStore.value.trim(),
+          supportedAndroid: formFields.gameAndroid.value === 'true',
+          supportedIos: formFields.gameIos.value === 'true',
+          warrantyDays: Number(formFields.gameWarrantyDays.value || 7),
+          warrantyNote: formFields.gameWarrantyNote.value.trim(),
+          isFeatured: formFields.gameFeatured.value === 'true',
+          isActive: formFields.gameActive.value === 'true'
+        };
+
+        const result = await adminFetch('/api/admin-games', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        addEventLogEntry('Game saved', result.data?.name || payload.name);
+        setMainSyncStatus(`บันทึกเกม "${payload.name}" แล้ว เปิดหรือรีเฟรชเว็บหลัก local เพื่อดูข้อมูลล่าสุด`);
+        await loadDashboard();
+        await loadGames();
+      }
+
+      async function savePackage() {
+        const { game, pkg } = readPackageSelection();
+        if (!game?.id) {
+          alert('ต้องเลือกเกมจากฐานข้อมูลก่อน');
+          return;
+        }
+
+        const payload = {
+          packageId: pkg?.id,
+          gameId: game.id,
+          name: formFields.packageName.value.trim(),
+          price: Number(formFields.packagePrice.value || 0),
+          items: formFields.packageItems.value,
+          description: formFields.packageDescription.value.trim(),
+          adminNotes: formFields.packageNotes.value.trim(),
+          badge: formFields.packageBadge.value.trim(),
+          sortOrder: Number(formFields.packageSortOrder.value || 0),
+          isRecommended: formFields.packageRecommended.value === 'true',
+          isActive: formFields.packageActive.value === 'true'
+        };
+
+        const result = await adminFetch('/api/admin-packages', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        addEventLogEntry('Package saved', result.data?.name || payload.name);
+        setMainSyncStatus(`บันทึกแพ็ค "${payload.name}" ราคา ${payload.price} บาทแล้ว เว็บหลัก local จะดึงข้อมูลนี้จาก API`);
+        await loadDashboard();
+        await loadGames();
+      }
+
+      async function savePost() {
+        const postId = ui.postSelect.value;
+        const payload = {
+          postId: postId && postId !== 'new' ? postId : '',
+          title: document.getElementById('postTitle').value.trim(),
+          content: document.getElementById('postContent').value.trim(),
+          type: document.getElementById('postType').value,
+          isActive: document.getElementById('postActive').value === 'true',
+        };
+
+        const result = await adminFetch('/api/admin-posts', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        addEventLogEntry('Post saved', result.data?.title || payload.title);
+        await loadPosts();
+      }
+
+      async function exportStaticSite() {
+        const button = document.getElementById('exportStaticButton');
+        if (button) {
+          button.disabled = true;
+          button.textContent = 'กำลังสร้างไฟล์...';
+        }
+        try {
+          const result = await adminFetch('/api/admin-export-static', { method: 'POST' });
+          const data = result.data || {};
+          const sizeKb = Math.max(1, Math.round(Number(data.zipSize || 0) / 1024));
+          setMainSyncStatus(`สร้างชุด Netlify แล้ว: ${data.games || 0} เกม, zip ${sizeKb} KB -> ${data.zipPath || 'netlify-deploy-latest.zip'}`);
+          addEventLogEntry('Static export ready', `${data.games || 0} games exported for Netlify`);
+        } catch (error) {
+          setMainSyncStatus(`สร้างไฟล์ Netlify ไม่สำเร็จ: ${error.message}`, false);
+          addEventLogEntry('Static export failed', error.message);
+        } finally {
+          if (button) {
+            button.disabled = false;
+            button.textContent = 'สร้างไฟล์อัป Netlify';
+          }
+        }
+      }
+
+      function newPost() {
+        const option = new Option('ประกาศใหม่...', 'new', true, true);
+        ui.postSelect.append(option);
+        ui.postSelect.value = 'new';
+        document.getElementById('postTitle').value = '';
+        document.getElementById('postContent').value = '';
+        document.getElementById('postType').value = 'announcement';
+        document.getElementById('postActive').value = 'true';
+      }
+
+      ui.refreshButton.addEventListener('click', () => loadDashboard());
+      ui.gameSelect.addEventListener('change', () => {
+        const game = readGameSelection();
+        fillGameForm(game);
+      });
+      ui.packageGameSelect.addEventListener('change', () => {
+        renderPackageSelector();
+        const { game, pkg } = readPackageSelection();
+        fillPackageForm(game, pkg);
+      });
+      ui.packageSelect.addEventListener('change', () => {
+        const { game, pkg } = readPackageSelection();
+        fillPackageForm(game, pkg);
+      });
+      ui.postSelect.addEventListener('change', () => {
+        const post = posts.find(p => p.id === ui.postSelect.value);
+        fillPostForm(post);
+      });
+      ui.couponSelect.addEventListener('change', onCouponSelectionChange);
+      ui.recentOrders.addEventListener('change', (event) => {
+        const select = event.target.closest('.order-status-select');
+        if (!select) return;
+        updateOrderStatus(select.dataset.orderId, select.value);
+      });
+      ui.recentOrders.addEventListener('click', (event) => {
+        const button = event.target.closest('.slip-reference');
+        if (!button) return;
+        alert(`Slip reference: ${button.dataset.slipUrl}`);
+      });
+      
+      ui.unlockButton.addEventListener('click', unlock);
+      document.getElementById('saveGameButton').addEventListener('click', saveGame);
+      document.getElementById('newGameButton').addEventListener('click', newGame);
+      formFields.gamePlayImageFile.addEventListener('change', uploadGameImage);
+      formFields.gamePlayImage.addEventListener('input', () => setGameImagePreview(formFields.gamePlayImage.value));
+      document.getElementById('savePackageButton').addEventListener('click', savePackage);
+      document.getElementById('newPackageButton').addEventListener('click', newPackage);
+      document.getElementById('savePostButton').addEventListener('click', savePost);
+      document.getElementById('newPostButton').addEventListener('click', newPost);
+      document.getElementById('saveCouponButton').addEventListener('click', saveCoupon);
+      document.getElementById('newCouponButton').addEventListener('click', newCoupon);
+      document.getElementById('exportStaticButton').addEventListener('click', exportStaticSite);
+      ui.checkBackendButton.addEventListener('click', checkBackendHealth);
+      ui.backupDatabaseButton.addEventListener('click', backupDatabase);
+      ui.exportExcelButton.addEventListener('click', exportExcel);
+      ui.testTelegramButton.addEventListener('click', testTelegramNotification);
+      
+      window.updateOrderStatus = updateOrderStatus;
+
+      async function bootstrapSession() {
+        ui.loginStatus.value = adminToken ? 'พบ Session เดิม กำลังเข้าสู่ระบบ...' : 'กรุณาเข้าสู่ระบบ';
+        try {
+          await loadDashboard();
+          ui.loginOverlay.style.display = 'none';
+          await loadGames();
+          await loadPosts();
+          await loadOrders();
+          await loadCoupons();
+          await checkBackendHealth();
+          connectRealtime();
+        } catch {
+          sessionStorage.removeItem(STORAGE_KEY);
+          adminToken = '';
+          ui.loginStatus.value = 'กรุณาเข้าสู่ระบบ';
+        }
+      }
+
+      bootstrapSession();
+    </script>
+  </body>
+</html>

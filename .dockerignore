@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.db
+*.zip
+.env
+node_modules/
+netlify-deploy/
+backend-deploy/
+.git/
+exports/
+uploads/slip-*

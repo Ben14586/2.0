@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.venv/
+node_modules/
+uploads/
+database.db
+*.log
+*.zip
+exports/
+dist/
+netlify-deploy/
+step2-backend-release/

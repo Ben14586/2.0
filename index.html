@@ -1,0 +1,1727 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Game Services - ระบบสั่งซื้อและติดตามออเดอร์</title>
+    <link rel="stylesheet" href="./frontend/styles/theme.css" />
+    <script>
+      if (window.location.protocol === "file:") {
+        window.location.replace(`http://127.0.0.1:3000/${window.location.hash || ""}`);
+      }
+    </script>
+    <script id="static-games-data">window.STATIC_GAMES = window.STATIC_GAMES || null;</script>
+    <script src="./runtime-config.js"></script>
+    <style>
+      body {
+        background:
+          linear-gradient(135deg, rgba(250, 243, 238, 0.98), rgba(244, 236, 255, 0.98) 52%, rgba(255, 251, 245, 0.98)),
+          radial-gradient(circle at 16% 12%, rgba(218, 182, 154, 0.18), transparent 28%),
+          radial-gradient(circle at 82% 18%, rgba(178, 154, 214, 0.16), transparent 22%),
+          radial-gradient(circle at 50% 94%, rgba(243, 208, 170, 0.22), transparent 28%),
+          #faf3ee;
+        color: #342d3b;
+      }
+
+      .page-shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 24px 0 48px;
+      }
+
+      .site-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 36px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 900;
+      }
+
+      .brand-mark {
+        display: inline-flex;
+        width: 40px;
+        height: 40px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #8d6e63, #d8b7a0 52%, #f2dcc8);
+        color: #241d29;
+        box-shadow: 0 14px 30px rgba(141, 110, 99, 0.18), inset 0 0 16px rgba(255, 255, 255, 0.46);
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        color: #6d6077;
+        font-size: 14px;
+      }
+
+      .nav a {
+        color: inherit;
+        font-weight: 800;
+        text-decoration: none;
+        transition: color 0.18s ease, transform 0.18s ease;
+      }
+
+      .nav a:hover {
+        color: #7c5d53;
+        transform: translateY(-1px);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 24px;
+        align-items: stretch;
+      }
+
+      .hero-copy {
+        padding: 32px 36px 34px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hero-copy::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, rgba(189, 159, 128, 0.18), transparent 42%, rgba(143, 117, 173, 0.10));
+        pointer-events: none;
+      }
+
+      .hero-copy > * {
+        position: relative;
+      }
+
+      .eyebrow {
+        margin: 0 0 16px;
+        color: #8d6e63;
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        max-width: 760px;
+        margin: 0;
+        font-size: clamp(34px, 4.2vw, 54px);
+        line-height: 1.18;
+        letter-spacing: 0;
+        background: linear-gradient(90deg, #5a4c62, #8f6f94 46%, #c39a84 78%, #7c6d58);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      h1 span,
+      .hero-copy p span {
+        display: block;
+      }
+
+      h1 .nowrap {
+        white-space: nowrap;
+      }
+
+      .hero-copy p {
+        max-width: 780px;
+        color: var(--text-muted);
+        font-size: 16px;
+        line-height: 1.8;
+        margin: 18px 0 0;
+      }
+
+      .search-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .search-row input,
+      .select-field,
+      select,
+      textarea {
+        width: 100%;
+        min-height: 46px;
+        border: 1px solid rgba(141, 110, 99, 0.18);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.72);
+        color: #342d3b;
+        font-weight: 700;
+        padding: 0 14px;
+        outline: none;
+        box-shadow: 0 10px 24px rgba(78, 58, 63, 0.06), inset 0 0 18px rgba(255, 255, 255, 0.55);
+      }
+
+      select option,
+      .select-field option {
+        background: #ffffff;
+        color: #241d29;
+        font-weight: 700;
+      }
+
+      textarea {
+        min-height: 86px;
+        padding: 12px 14px;
+        resize: vertical;
+      }
+
+      .game-panel {
+        padding: 24px;
+      }
+
+      .game-art,
+      .game-thumb {
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(247, 234, 225, 0.78) 48%, rgba(242, 228, 246, 0.68)),
+          rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(141, 110, 99, 0.18);
+        box-shadow: inset 0 0 34px rgba(255, 255, 255, 0.32), 0 20px 30px rgba(106, 92, 104, 0.10);
+        font-weight: 900;
+      }
+
+      .game-art {
+        min-height: 220px;
+        font-size: 64px;
+      }
+
+      .game-thumb {
+        width: 64px;
+        height: 64px;
+        flex: 0 0 auto;
+        font-size: 22px;
+      }
+
+      .section {
+        margin-top: 24px;
+      }
+
+      .section-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 16px;
+        margin-bottom: 14px;
+      }
+
+      .section-title h2 {
+        margin: 0;
+        font-size: 24px;
+      }
+
+      .muted {
+        color: var(--text-muted);
+      }
+
+      .category-row,
+      .game-grid,
+      .package-grid,
+      .trust-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .category-row {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .category {
+        padding: 16px;
+        text-align: center;
+        font-weight: 800;
+        color: #4d4255;
+      }
+
+      .game-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .game-card {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-height: 275px;
+        padding: 18px;
+      }
+
+      .game-card__media {
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: 16 / 9;
+        border-radius: 8px;
+        background: linear-gradient(135deg, rgba(141, 110, 99, 0.15), rgba(143, 111, 148, 0.16));
+        border: 1px solid rgba(141, 110, 99, 0.16);
+        box-shadow: 0 18px 30px rgba(106, 92, 104, 0.11);
+      }
+
+      .game-card__media img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        transition: transform 0.28s ease;
+      }
+
+      .game-card:hover .game-card__media img {
+        transform: scale(1.035);
+      }
+
+      .game-card__fallback {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        place-items: center;
+        color: #5b4c62;
+        font-size: 42px;
+        font-weight: 900;
+      }
+
+      .game-card__top {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .game-card__top .game-thumb {
+        width: 48px;
+        height: 48px;
+        font-size: 16px;
+      }
+
+      .game-card h3 {
+        margin: 0 0 4px;
+        line-height: 1.25;
+      }
+
+      .game-card p {
+        margin: 0;
+        color: var(--text-muted);
+        line-height: 1.55;
+      }
+
+      .game-card > p {
+        min-height: 72px;
+      }
+
+      .game-card__footer {
+        display: grid;
+        gap: 12px;
+        margin-top: auto;
+      }
+
+      .package-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .package-card {
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        min-height: 255px;
+      }
+
+      .package-card h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .package-card p {
+        color: #675d72;
+        line-height: 1.55;
+      }
+
+      .package-card__header,
+      .package-card__footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .package-card__footer {
+        margin-top: auto;
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .package-card.selected {
+        border-color: rgba(141, 110, 99, 0.42);
+        box-shadow: 0 14px 34px rgba(141, 110, 99, 0.14);
+      }
+
+      .package-card__items {
+        margin: 0;
+        padding-left: 18px;
+        display: grid;
+        gap: 6px;
+        color: #675d72;
+        line-height: 1.55;
+      }
+
+      .package-card__items li::marker {
+        color: #9b7b65;
+      }
+
+      .package-card__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 10px 0 0;
+      }
+
+      .detail-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(141, 110, 99, 0.14);
+        background: rgba(255, 255, 255, 0.7);
+        color: #5e5169;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .detail-grid div {
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.68);
+        border: 1px solid rgba(141, 110, 99, 0.12);
+        color: #655973;
+        font-size: 13px;
+      }
+
+      .public-package-section {
+        margin-top: 24px;
+      }
+
+      .public-package-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .public-package-card {
+        min-height: 340px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(250, 244, 238, 0.92)),
+          rgba(255, 255, 255, 0.78);
+        border-color: rgba(141, 110, 99, 0.16);
+      }
+
+      .public-package-card .price-text {
+        font-size: 20px;
+        color: #4d4255;
+      }
+
+      .public-package-card .package-card__footer {
+        gap: 12px;
+      }
+
+      .creator-reference {
+        margin-top: 24px;
+      }
+
+      .creator-layout {
+        display: grid;
+        grid-template-columns: minmax(260px, 0.55fr) minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .creator-card {
+        padding: 20px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .creator-profile {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .creator-profile img {
+        width: 76px;
+        height: 76px;
+        border-radius: 20px;
+        object-fit: cover;
+        border: 1px solid rgba(94, 81, 105, 0.16);
+        background: rgba(255, 255, 255, 0.78);
+      }
+
+      .creator-actions,
+      .clip-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .reference-thumb {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        object-fit: cover;
+        border-radius: 12px;
+        background: #ece6df;
+      }
+
+      .source-catalog {
+        margin-top: 18px;
+      }
+
+      .reference-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .reference-card {
+        padding: 14px;
+        display: grid;
+        gap: 10px;
+        min-height: 320px;
+      }
+
+      .reference-card h3 {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.35;
+        color: #4d4255;
+      }
+
+      .reference-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .reference-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-self: end;
+      }
+
+      .service-section[hidden] {
+        display: none;
+      }
+
+      .order-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 0.8fr) minmax(320px, 0.55fr);
+        gap: 18px;
+      }
+
+      .order-box {
+        padding: 22px;
+      }
+
+      .order-success {
+        display: grid;
+        gap: 14px;
+        padding: 22px;
+        border: 1px solid rgba(141, 110, 99, 0.18);
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      .order-success__id {
+        display: inline-flex;
+        width: fit-content;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        background: rgba(216, 183, 160, 0.22);
+        color: #4d4255;
+        font-size: 18px;
+        font-weight: 900;
+      }
+
+      .order-success__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .summary-line {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .message-preview {
+        white-space: pre-wrap;
+        color: var(--text-muted);
+        line-height: 1.55;
+        border: 1px solid rgba(141, 110, 99, 0.16);
+        border-radius: 8px;
+        padding: 14px;
+        background: rgba(255, 255, 255, 0.6);
+      }
+
+      .trust-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .trust-card {
+        padding: 20px;
+      }
+
+      .section-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.74);
+        border: 1px solid rgba(141, 110, 99, 0.12);
+        color: #7b6270;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .hero-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .glass-card {
+        backdrop-filter: blur(18px);
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(141, 110, 99, 0.12);
+        box-shadow: 0 18px 44px rgba(89, 75, 88, 0.08);
+        border-radius: 24px;
+      }
+
+      .risk-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 26px;
+        padding: 0 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .risk-pill.low {
+        background: rgba(151, 184, 153, 0.18);
+        color: #4f6c57;
+      }
+
+      .risk-pill.medium {
+        background: rgba(195, 154, 132, 0.18);
+        color: #8a614f;
+      }
+
+      .risk-pill.high {
+        background: rgba(185, 117, 145, 0.18);
+        color: #8a4c6a;
+      }
+
+      @media (max-width: 900px) {
+        .hero,
+        .order-layout,
+        .game-grid,
+        .package-grid,
+        .trust-grid,
+        .creator-layout,
+        .reference-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .category-row {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .nav {
+          display: none;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .search-row {
+          grid-template-columns: 1fr;
+        }
+
+        .category-row {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-copy,
+        .game-panel,
+        .order-box {
+          padding: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      window.addEventListener('error', function(e) {
+        var errEl = document.getElementById('react-error-log');
+        if (!errEl) {
+          errEl = document.createElement('div');
+          errEl.id = 'react-error-log';
+          errEl.style.position = 'fixed';
+          errEl.style.top = '0';
+          errEl.style.left = '0';
+          errEl.style.width = '100%';
+          errEl.style.background = 'rgba(255, 0, 0, 0.9)';
+          errEl.style.color = 'white';
+          errEl.style.padding = '15px';
+          errEl.style.zIndex = '99999';
+          errEl.style.fontFamily = 'monospace';
+          errEl.style.fontSize = '14px';
+          errEl.style.whiteSpace = 'pre-wrap';
+          document.body.appendChild(errEl);
+        }
+        errEl.textContent += '\nError: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        var errEl = document.getElementById('react-error-log');
+        if (!errEl) {
+          errEl = document.createElement('div');
+          errEl.id = 'react-error-log';
+          errEl.style.position = 'fixed';
+          errEl.style.top = '0';
+          errEl.style.left = '0';
+          errEl.style.width = '100%';
+          errEl.style.background = 'rgba(255, 0, 0, 0.9)';
+          errEl.style.color = 'white';
+          errEl.style.padding = '15px';
+          errEl.style.zIndex = '99999';
+          errEl.style.fontFamily = 'monospace';
+          errEl.style.fontSize = '14px';
+          errEl.style.whiteSpace = 'pre-wrap';
+          document.body.appendChild(errEl);
+        }
+        errEl.textContent += '\nUnhandled Rejection: ' + e.reason;
+      });
+    </script>
+    <main class="page-shell" id="top">
+      <header class="site-header">
+        <div class="brand">
+          <span class="brand-mark">GS</span>
+          <span>Game Services</span>
+        </div>
+        <nav class="nav" aria-label="Main">
+          <a href="#top">หน้าแรก</a>
+          <a href="#games">เกมทั้งหมด</a>
+          <a href="#creator-reference">ข้อมูลอ้างอิง</a>
+          <a href="#trust">รับประกัน</a>
+        </nav>
+        <a class="primary-action" href="#games">เลือกเกม</a>
+      </header>
+
+      <!-- Order Tracking Widget (Feature 3) -->
+      <section class="section glass-card" style="padding: 22px; margin-bottom: 24px;">
+        <h2>ติดตามสถานะออเดอร์</h2>
+        <p class="muted">ตรวจสอบสถานะการเติมเกมของท่านได้ทันทีแบบ Real-time</p>
+        <div class="search-row" style="margin-top: 14px;">
+          <input id="trackingOrderId" placeholder="กรอกหมายเลขออเดอร์ เช่น ORD-1" aria-label="หมายเลขออเดอร์" style="box-shadow: inset 0 0 8px rgba(0,0,0,0.02);" />
+          <button id="trackButton" class="primary-action" type="button" onclick="trackOrder()">ตรวจสอบสถานะ</button>
+        </div>
+        <div id="trackingResult" style="margin-top: 18px; display: none;">
+          <div class="glass-card" style="padding: 18px; border: 1px solid rgba(141,110,99,0.18); background: rgba(255,255,255,0.86);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <strong id="trackResultId" style="font-size: 18px; color: #4d4255;">ORD-1</strong>
+              <span id="trackResultStatus" class="risk-pill low">รอดำเนินการ</span>
+            </div>
+            <p style="margin: 4px 0;"><strong>เกม:</strong> <span id="trackResultGame">-</span></p>
+            <p style="margin: 4px 0;"><strong>แพ็คเกจ:</strong> <span id="trackResultPackage">-</span></p>
+            <p style="margin: 4px 0;"><strong>ราคาสุทธิ:</strong> <span id="trackResultPrice" class="price-text" style="font-weight: 700; color: #8d6e63;">-</span></p>
+            <p style="margin: 4px 0; font-size: 13px; color: #6d6077;"><strong>สร้างเมื่อ:</strong> <span id="trackResultTime">-</span></p>
+            
+            <div style="margin-top: 20px;">
+              <div style="display: flex; justify-content: space-between; font-size: 12px; color: #6d6077; margin-bottom: 8px;">
+                <span>ได้รับออเดอร์</span>
+                <span>กำลังดำเนินการ</span>
+                <span>สำเร็จ</span>
+              </div>
+              <div style="width: 100%; height: 10px; background: rgba(0,0,0,0.06); border-radius: 99px; overflow: hidden; position: relative;">
+                <div id="trackProgressBar" style="width: 15%; height: 100%; background: linear-gradient(90deg, #d8b7a0, #8d6e63); border-radius: 99px; transition: width 0.6s ease;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="hero">
+        <div class="glass-card hero-copy">
+          <p class="eyebrow">Game Service Commerce Platform</p>
+          <h1>
+            <span>บริการเกมมือถือครบวงจร</span>
+            <span class="nowrap">สั่งซื้อง่าย ดูแลครบ</span>
+          </h1>
+          <p>
+            <span>เลือกเกมและแพ็กเกจที่ต้องการ ดูรายละเอียด ราคา และรายการในแพ็กได้ชัดเจน</span>
+            <span>พร้อมระบบติดตามออเดอร์ แจ้งข้อมูลครบถ้วน และหลังบ้านที่พร้อมใช้งานจริง</span>
+          </p>
+          <div class="hero-badges">
+            <span class="section-kicker">บริการครบวงจร</span>
+            <span class="section-kicker">รับประกัน 7 วัน</span>
+            <span class="section-kicker">ดูแลหลังการขาย</span>
+          </div>
+          <div class="search-row">
+            <input id="gameSearch" placeholder="ค้นหาเกม เช่น Primitive Brothers, Idle RPG, AFK" aria-label="ค้นหาเกม" />
+            <button id="searchButton" class="primary-action" type="button">ค้นหาเกม</button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- React 3D Spline Showcase (Feature 7) -->
+      <section class="section" id="react-service-upgrade" style="margin-top: 24px;">
+        <div id="react-upgrade-root">
+          <div class="glass-card" style="padding: 24px;">
+            <span class="section-kicker">Premium Service System</span>
+            <h2 style="margin: 12px 0 0;">ระบบบริการเกมพร้อมออเดอร์และหลังบ้านครบ</h2>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="games">
+        <div class="section-title">
+          <h2>เกมทั้งหมด</h2>
+          <span id="gameCount" class="muted">เลือกเกมเพื่อดูแพ็คเกจ</span>
+        </div>
+        <div id="gameGrid" class="game-grid"></div>
+      </section>
+
+      <section class="section creator-reference" id="creator-reference">
+        <div class="section-title">
+          <h2>Game Reference Catalog</h2>
+          <span class="muted">ข้อมูลเกม TD/RPG</span>
+        </div>
+        <div class="source-catalog">
+          <div class="section-title" style="margin-top: 18px;">
+            <h2>Tower Defense (TD)</h2>
+            <span class="muted">พร้อมรายละเอียดบริการรายเกม</span>
+          </div>
+          <div id="tdGameGrid" class="reference-grid"></div>
+          <div class="section-title" style="margin-top: 24px;">
+            <h2>RPG / Idle RPG</h2>
+            <span class="muted">พร้อมรายละเอียดบริการรายเกม</span>
+          </div>
+          <div id="rpgGameGrid" class="reference-grid"></div>
+        </div>
+      </section>
+
+      <section class="section service-section" id="packages" hidden>
+        <div class="section-title">
+          <h2 id="packageTitle">แพ็คเกจบริการ</h2>
+          <span class="muted">เลือกรายการแล้วดูสรุปด้านล่าง</span>
+        </div>
+        <div id="packageGrid" class="package-grid"></div>
+      </section>
+
+      <section class="section service-section order-layout" id="order" hidden>
+        <div class="glass-card order-box">
+          <h2>ข้อมูลสำหรับสั่งซื้อ</h2>
+          <label>
+            <span class="muted">ระบบมือถือ</span>
+            <select id="platform" class="select-field">
+              <option>iOS</option>
+              <option>Android</option>
+            </select>
+          </label>
+          <br /><br />
+          <label>
+            <span class="muted">หมายเหตุถึงแอดมิน</span>
+            <textarea id="customerNote" placeholder="เช่น พร้อมส่งข้อมูลบัญชีหลังแอดมินตอบกลับ"></textarea>
+          </label>
+          <br /><br />
+
+          <!-- Payment Slip Upload (Feature 2) -->
+          <label>
+            <span class="muted">อัปโหลดสลิปเพื่อคัดกรองรูปและส่งให้แอดมินยืนยันยอด</span>
+            <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+              <input type="file" id="slipFileInput" accept="image/*" style="display: none;" onchange="handleSlipUpload(event)" />
+              <button type="button" class="secondary-action" onclick="document.getElementById('slipFileInput').click()" style="min-height: 38px; border-radius: 8px; font-size: 13px;">
+                เลือกรูปภาพสลิป
+              </button>
+              <span id="slipFileName" class="muted" style="font-size: 13px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">ยังไม่ได้อัปโหลดสลิป</span>
+            </div>
+            <div id="slipVerifyStatus" class="risk-pill" style="display: none; margin-top: 10px; width: fit-content; min-height: auto; padding: 4px 10px; font-size: 12px;"></div>
+          </label>
+        </div>
+
+        <aside class="glass-card order-box">
+          <h2>สรุปรายการสั่งซื้อ</h2>
+          <div class="summary-line">
+            <span class="muted">เกม</span>
+            <strong id="summaryGame">-</strong>
+          </div>
+          <div class="summary-line">
+            <span class="muted">แพ็คเกจ</span>
+            <strong id="summaryPackage">-</strong>
+          </div>
+          <div class="summary-line">
+            <span class="muted">ราคาปกติ</span>
+            <strong id="summaryPrice" class="price-text">- บาท</strong>
+          </div>
+          
+          <!-- Coupon discount lines (Feature 6) -->
+          <div class="summary-line" id="discountLine" style="display: none; color: #8a4c6a;">
+            <span class="muted" style="color: #8a4c6a;">ส่วนลดคูปอง</span>
+            <strong id="summaryDiscount">-0 บาท</strong>
+          </div>
+          <div class="summary-line" id="finalPriceLine" style="display: none; border-top: 2px solid rgba(141, 110, 99, 0.18); padding-top: 14px;">
+            <span class="muted" style="font-weight: 800;">ยอดชำระสุทธิ</span>
+            <strong id="summaryFinalPrice" class="price-text" style="font-size: 20px;">- บาท</strong>
+          </div>
+
+          <!-- Coupon input (Feature 6) -->
+          <div style="margin-top: 14px; display: grid; grid-template-columns: 1fr auto; gap: 8px;">
+            <input id="couponCode" placeholder="รหัสส่วนลด (เช่น DISCOUNT50)" style="min-height: 38px; border-radius: 8px; font-size: 13px; padding: 0 8px;" />
+            <button id="applyCouponBtn" class="secondary-action" type="button" onclick="applyCoupon()" style="min-height: 38px; border-radius: 8px; padding: 0 12px; font-size: 13px;">ใช้งาน</button>
+          </div>
+          <p id="couponMessage" style="font-size: 12px; margin: 4px 0 0; display: none;"></p>
+
+          <p class="message-preview" id="messagePreview" style="margin-top: 14px;"></p>
+          <button id="chatButton" class="primary-action" type="button" style="width: 100%; margin-top: 14px;">
+            ยืนยันการสั่งซื้อและแจ้งโอนเงิน
+          </button>
+        </aside>
+      </section>
+
+      <section class="section service-section" id="orderSuccess" hidden>
+        <article class="glass-card order-success">
+          <span class="section-kicker">Order Created</span>
+          <h2 style="margin: 0;">รายละเอียดออเดอร์ของคุณ</h2>
+          <div class="order-success__id">
+            เลขออเดอร์: <span id="successOrderId">-</span>
+          </div>
+          <div class="summary-line">
+            <span class="muted">เกม</span>
+            <strong id="successGame">-</strong>
+          </div>
+          <div class="summary-line">
+            <span class="muted">แพ็คเกจ</span>
+            <strong id="successPackage">-</strong>
+          </div>
+          <div class="summary-line">
+            <span class="muted">ระบบ</span>
+            <strong id="successPlatform">-</strong>
+          </div>
+          <div class="summary-line">
+            <span class="muted">ยอดชำระ</span>
+            <strong id="successPrice" class="price-text">-</strong>
+          </div>
+          <p class="message-preview" id="successMessage"></p>
+          <div class="order-success__actions">
+            <a class="primary-action" href="https://t.me/banjamin00412" target="_blank" rel="noreferrer noopener">ติดต่อ Telegram</a>
+            <a class="secondary-action" href="https://www.facebook.com/Alexander.iooo?locale=th_TH" target="_blank" rel="noreferrer noopener">ติดต่อ Facebook</a>
+            <button class="secondary-action" type="button" onclick="document.getElementById('trackingOrderId').scrollIntoView({ behavior: 'smooth', block: 'center' })">ไปเช็กสถานะ</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="section trust-grid" id="trust">
+        <article class="glass-card trust-card">
+          <div class="warranty-icon">7D</div>
+          <h3>รับประกัน 7 วัน</h3>
+          <p class="muted">กรณีเกิดปัญหาตามเงื่อนไขร้าน ดูแลฟรี 1 ครั้ง</p>
+        </article>
+        <article class="glass-card trust-card">
+          <div class="warranty-icon">OS</div>
+          <h3>Android / iOS</h3>
+          <p class="muted">แสดงระบบที่รองรับชัดเจนก่อนลูกค้าทัก</p>
+        </article>
+        <article class="glass-card trust-card">
+          <div class="warranty-icon">📱</div>
+          <h3>ติดต่อง่าย</h3>
+          <p class="muted">ส่งข้อมูลครบถ้วน แอดมินตรวจสอบและดำเนินการได้ทันที</p>
+        </article>
+      </section>
+
+      <section class="section contact-section">
+        <div class="section-title">
+          <h2>ช่องทางติดต่อ / จ้างงาน</h2>
+          <span class="muted">คุยงานและสั่งทำผ่านช่องทางหลัก</span>
+        </div>
+        <div class="dashboard-grid">
+          <article class="glass-card dashboard-card">
+            <h3>Facebook</h3>
+            <p class="muted">คุยงานผ่านเฟสได้ที่หน้าหลักของผู้ให้บริการ</p>
+            <a class="primary-action" href="https://www.facebook.com/Alexander.iooo?locale=th_TH" target="_blank" rel="noreferrer noopener">เปิด Facebook</a>
+          </article>
+          <article class="glass-card dashboard-card">
+            <h3>Telegram</h3>
+            <p class="muted">ส่งรายละเอียดงานหรือไฟล์ให้แอดมินได้ทาง Telegram</p>
+            <a class="primary-action" href="https://t.me/banjamin00412" target="_blank" rel="noreferrer noopener">เปิด Telegram</a>
+          </article>
+          <article class="glass-card dashboard-card">
+            <h3>หลังบ้าน</h3>
+            <p class="muted">จัดการเกม แพ็ค และลีดในหน้าแอดมินแยกเฉพาะทีม</p>
+            <span class="secondary-action" aria-label="Admin area restricted">สำหรับทีมเท่านั้น</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="section payment-section">
+        <div class="section-title">
+          <h2>ช่องทางชำระเงิน</h2>
+          <span class="muted">โอนเงินผ่านช่องทางที่สะดวก</span>
+        </div>
+        <div class="dashboard-grid">
+          <article class="glass-card dashboard-card">
+            <h3>ธนาคารกสิกรไทย (KBank)</h3>
+            <p class="muted">เลขบัญชี: 134-1-05818-6</p>
+            <p class="muted">ชื่อบัญชี: ชัยแสงเพชร ธนวุฒิกีรติพร</p>
+            <span class="section-kicker">ออนไลน์ 24 ชม.</span>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      let games = [];
+      let selectedGame = null;
+      let selectedPackage = null;
+      let couponData = null;
+      let slipData = null; // Store verified slip payload
+      const LOCAL_ORDERS_KEY = "game-services-local-orders";
+
+      const gameGrid = document.querySelector("#gameGrid");
+      const gameSearch = document.querySelector("#gameSearch");
+      const searchButton = document.querySelector("#searchButton");
+      const gameCount = document.querySelector("#gameCount");
+      const packageTitle = document.querySelector("#packageTitle");
+      const packageGrid = document.querySelector("#packageGrid");
+      const serviceSections = document.querySelectorAll(".service-section");
+      const platform = document.querySelector("#platform");
+      const customerNote = document.querySelector("#customerNote");
+      const summaryGame = document.querySelector("#summaryGame");
+      const summaryPackage = document.querySelector("#summaryPackage");
+      const summaryPrice = document.querySelector("#summaryPrice");
+      const summaryDiscount = document.querySelector("#summaryDiscount");
+      const summaryFinalPrice = document.querySelector("#summaryFinalPrice");
+      const discountLine = document.querySelector("#discountLine");
+      const finalPriceLine = document.querySelector("#finalPriceLine");
+      const messagePreview = document.querySelector("#messagePreview");
+      const chatButton = document.querySelector("#chatButton");
+      const tdGameGrid = document.querySelector("#tdGameGrid");
+      const rpgGameGrid = document.querySelector("#rpgGameGrid");
+      
+      const API_BASE_URL = window.API_BASE_URL || (window.location.protocol === 'file:' ? 'http://localhost:3000' : window.location.origin);
+
+      function apiUrl(path) {
+        return `${API_BASE_URL}${path}`;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function safeArray(value) {
+        return Array.isArray(value) ? value : [];
+      }
+
+      let referenceGames = [
+        { type: "TD", name: "Idle Hero TD", features: ["Free Purchase"], referenceTitle: "Idle Hero TD Free Purchase", playImage: "https://play-lh.googleusercontent.com/H3oTGSHUMLvxISgZuxiADw5mPntpbdt-gPtYjvLmWQdPBd9IVmYUEaVcTT7tjEHdfDnoHIy8WQDAZhjw-AA=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.SwellGamesLLC.IdleHeroTD" },
+        { type: "TD", name: "STICKMAN DEFENSE TD", features: ["Free Purchase"], referenceTitle: "STICKMAN DEFENSE Free Purchase & etc", playImage: "https://play-lh.googleusercontent.com/sWOTYTjIobnwDJAqKxgr0rgShFfxTIcvHttlZMmEEl3VPCIdLMZfSz_vq0QSCFqEW0ADwVY2bwBQCFVfJ6WD=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.thp020.stickman.casual.war.game" },
+        { type: "TD", name: "SLIME CASTLE TD", features: ["Free Purchase"], referenceTitle: "SLIME CASTLE Resources, Features & etc", playImage: "https://play-lh.googleusercontent.com/dlIrw8DEGYtQcJ3CVi8sFDtk1QokR7_IQt3Ei-rq4psLZBJG4KlR3NkjWT9LFpDx9spX2y4OSo5dnO4Ynx_0=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.redtailworks.slimetd" },
+        { type: "TD", name: "DRAGON FEVER TD", features: ["Free Purchase"], referenceTitle: "DRAGON FEVER TD Resources", playImage: "https://play-lh.googleusercontent.com/VR8y3L1aXJCUel6HeSFWhz7aJMCeeCA6jqLipsYHxF9LE-GR-oOnDIxI-9wSWlbZkUw6zVBuu67MkrauNbFSHg=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.traverse.zhfx.en.gp" },
+        { type: "TD", name: "TINY WARRIORS RUSH TD", features: ["Free Purchase"], referenceTitle: "TINY WARRIORS RUSH Free Purchase & etc", playImage: "https://play-lh.googleusercontent.com/Ck6J9PYhOwyRA9R4ylOELN8gPLepMM_Sjko0Q19jQTW3ygU52dpEN-JqyqmIT6paVWfqaVBcZIzD_oaIOz6_Hw=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.nlabsoft.defense.tinywarriors" },
+        { type: "TD", name: "PUNKO.IO TD", features: ["Free Purchase"], referenceTitle: "PUNKO.IO Free Purchase & Open UI", playImage: "https://play-lh.googleusercontent.com/cndw4JsmjhhYMMPD8DWgNDOmnFdiz_-6CQwvVM20mgRjIY31lNLq-D11XHFo5KoBlw6TN7YcR2goPgh1yoLU_nY=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.Agonalea.Punko.io" },
+        { type: "TD", name: "SURVIVAL ARENA TD", features: ["Free Purchase"], referenceTitle: "SURVIVAL ARENA DevTool", playImage: "https://play-lh.googleusercontent.com/M2QuWZUYdQTaauq5lVfPKOTPgRNy5US8DtvhTErx6Bwm1Md-wQhWs00pi1EgpzfhuVnF4bh1VLVI85HBd57azA=w526-h296", playStore: "https://play.google.com/store/apps/details?id=tower.defense.survival.arena" },
+        { type: "TD", name: "RAID RUSH : Tower Defense TD", features: ["Reference / Free Resources"], referenceTitle: "RAID RUSH : Tower Defense TD Free Resources", playImage: "https://play-lh.googleusercontent.com/dvTtkpm_Wq95GHr35BDoZ_9GFI1Yq2fz-qZm3BYtYV626kn6WV8dllJVwSZojNAoUVDuuxKoNcNN84_djNm1Xg=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.wireless.defenseland" },
+        { type: "TD", name: "Samkok Heroes TD", features: ["Free Purchase Gold"], referenceTitle: "Free Purchase Gold", playImage: "https://play-lh.googleusercontent.com/zcYbwxtXyR-7fd-jwTnMfRypX94Ah90iLIhxfI4pUE0eU-jGhsZekgM05fUkyvzKR50Rp7H6jCNxiwKCG1O5N58=w526-h296", playStore: "https://play.google.com/store/apps/details?id=co.imba.threekingdoms.towerdefense" },
+        { type: "RPG", name: "Lighting Princess: Idle RPG", features: ["Free Shop"], referenceTitle: "Free Shop", playImage: "https://play-lh.googleusercontent.com/LpAyjmJNveogHqjM5IBPgqlNjdBOq1SmCQFQxNQ_jYcQ3jqRMgjoZYW02pEz-adpP9Ipxxz2SAsc2l5sDWtr_Q=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.superplanet.lightning" },
+        { type: "RPG", name: "Shadow Knight : Idle RPG", features: ["Add Shadow Piece", "Change dungeon reward", "Get All Aura, need rebirth first", "Shadow Tree No cost", "Token Shop No cost", "Auto complete Main Quest", "Artifact No cost"], referenceTitle: "Idle RPG feature service", playImage: "https://play-lh.googleusercontent.com/v6lpuelvj-egZ_c0W1Gxc8juHDuCQ49-rzilcPacnNBw5_8Tn0ltJciP-bvFsNb6wEzOxEfHKwbpmv61WQOD7w=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.fansipan.stickman.fight.shadow.knights" },
+        { type: "RPG", name: "Idle Hunter: Eternal Soul RPG", features: ["Add Currency", "Change Summon Count"], referenceTitle: "Add Currency / Change Summon Count", playImage: "https://play-lh.googleusercontent.com/P9AXDmkbmIBu4JLy1LqyHuasV1vn31yyrRnrU-e36Ay0XNJNwxU98Ho6uinAS8hlTaEx1Czc-HyfMaG3bCIJCw=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.afk.idle.hunter.eternal.soul" },
+        { type: "RPG", name: "Legend of Slime : Idle RPG", features: ["Free Purchase"], referenceTitle: "LEGEND OF SLIME : Idle RPG Free Purchase / Free Shopping", playImage: "https://play-lh.googleusercontent.com/Gw0dW2CVa8TG6h9Rcee6pICAaBPe-_FblqhJTjpBurDbgC3V_yrryo6nIaF_xxrfXkvbcddbeLqFEFs69XS46Q=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.loadcomplete.slimeidle" },
+        { type: "RPG", name: "Legend of Witch : Idle RPG", features: ["Free Purchase"], referenceTitle: "Free Purchase", playImage: "https://play-lh.googleusercontent.com/auisbvrrFsndRbNUh6OAYPeW5bkBwsB4sOPR92E8gk0DFfmvw-k-DdhKiaZ6d5FCxMI9skF63L_6z7AJ-UjQWLQ=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.dreamplay.legendofwitch.google" },
+        { type: "RPG", name: "Bullet Heroes RPG", features: ["Free Purchase", "Free Resources"], referenceTitle: "BULLET HEROES Free Purchase & Free Resources", playImage: "https://play-lh.googleusercontent.com/Tr-XwEhgE7f2vx5m_Ow3syoSHsTcNzuKJk-NXmPgkzmtzDbmkFQV3sU19I_E7rnX8TbDxxdDMZM_qiKSVo4J89k=w526-h296", playStore: "https://play.google.com/store/apps/details?id=com.goosebump.bulletheroes" },
+        { type: "RPG", name: "Claw Master - RogueLike", features: ["Free Purchase"], referenceTitle: "Free Purchase", playImage: "https://play-lh.googleusercontent.com/1PhrqY-TLxjrtxsF_dJ9uP7cpn7c-OXdwMPj0dDfb3Ortlbnb1_mD_R0MXiI7nzCuo-t3uyo2bI24sAleNw2=w526-h296", playStore: "https://play.google.com/store/apps/details?id=hero.claw.master" }
+      ];
+
+      const gameDescriptions = {
+        "Idle Hero TD": "เกมป้องกันฐานแนว idle ที่ให้จัดทีมฮีโร่และวางแผนต้านศัตรูเป็นเวฟ เหมาะกับผู้เล่นที่ชอบอัปเกรดทีมและเล่นสะสมระยะยาว",
+        "STICKMAN DEFENSE TD": "เกม Tower Defense สไตล์สติกแมน เน้นวางกำลัง ป้องกันฐาน และอัปเกรดยูนิตให้รับมือศัตรูที่บุกมาเป็นระลอก",
+        "SLIME CASTLE TD": "เกมป้องกันปราสาทธีมสไลม์ เล่นง่าย ภาพน่ารัก เน้นอัปเกรดป้อมและสกิลเพื่อกันศัตรูไม่ให้ทะลุแนวป้องกัน",
+        "DRAGON FEVER TD": "เกมป้องกันฐานธีมมังกรและแฟนตาซี เน้นจัดทีม วางตำแหน่ง และใช้ทรัพยากรเพื่อเสริมพลังการต่อสู้",
+        "TINY WARRIORS RUSH TD": "เกมวางแผนป้องกันฐานที่ใช้ทีมนักรบตัวจิ๋วต่อสู้กับศัตรู เหมาะกับสายจัดทีมและอัปเกรดตัวละครต่อเนื่อง",
+        "PUNKO.IO TD": "เกมป้องกันฐานผสมแอ็กชันสไตล์ .io เดินเกมไว มีการเลือกสกิลและอัปเกรดระหว่างด่านเพื่อเอาตัวรอดจากศัตรูจำนวนมาก",
+        "SURVIVAL ARENA TD": "เกมเอาตัวรอดในสนามต่อสู้พร้อมระบบป้องกันฐาน ผู้เล่นต้องจัดการทรัพยากรและอัปเกรดเพื่อรับมือศัตรูที่ยากขึ้น",
+        "RAID RUSH : Tower Defense TD": "เกม Tower Defense ที่เน้นวางเส้นทาง ปรับกลยุทธ์ และอัปเกรดป้อมให้ผ่านด่านที่มีความท้าทายสูงขึ้นเรื่อย ๆ",
+        "Samkok Heroes TD": "เกม Tower Defense ธีมสามก๊ก มีตัวละครฮีโร่ให้สะสม จัดทีม และอัปเกรด เหมาะกับผู้เล่นที่ชอบกลยุทธ์และบรรยากาศสามก๊ก",
+        "Lighting Princess: Idle RPG": "เกม idle RPG แฟนตาซีที่ให้สะสมตัวละคร อัปเกรดพลัง และฟาร์มทรัพยากรแบบเล่นต่อเนื่องได้แม้ไม่ต้องควบคุมตลอดเวลา",
+        "Shadow Knight : Idle RPG": "เกม idle RPG โทนดาร์กแฟนตาซี เน้นพัฒนาตัวละคร อัปเกรดสกิล ลงดันเจี้ยน และเพิ่มพลังต่อสู้แบบค่อยเป็นค่อยไป",
+        "Idle Hunter: Eternal Soul RPG": "เกม idle RPG แนวล่ามอนสเตอร์และสะสมฮีโร่ ผู้เล่นอัปเกรดทีม เรียกตัวละคร และฟาร์มทรัพยากรเพื่อผ่านด่านที่ยากขึ้น",
+        "Legend of Slime : Idle RPG": "เกม idle RPG ที่ผู้เล่นรับบทเป็นสไลม์ พัฒนาพลัง อัปเกรดอุปกรณ์ และต่อสู้กับศัตรูแบบเล่นง่ายแต่สะสมได้ยาว",
+        "Legend of Witch : Idle RPG": "เกม idle RPG ธีมแม่มดและแฟนตาซี เน้นสะสมพลัง อัปเกรดตัวละคร และฟาร์มผ่านด่านด้วยระบบเล่นอัตโนมัติ",
+        "Bullet Heroes RPG": "เกม RPG แอ็กชันยิงต่อสู้ที่เน้นอัปเกรดฮีโร่ เก็บทรัพยากร และผ่านด่านด้วยพลังตัวละครที่เติบโตขึ้น",
+        "Claw Master - RogueLike": "เกม RogueLike ที่เล่นเป็นรอบ ๆ มีการเลือกอัปเกรดและไอเทมระหว่างทาง เหมาะกับผู้เล่นที่ชอบความท้าทายและด่านไม่ซ้ำเดิม",
+      };
+
+      function buildStaticGames() {
+        if (Array.isArray(window.STATIC_GAMES) && window.STATIC_GAMES.length) {
+          return window.STATIC_GAMES;
+        }
+
+        return referenceGames.map((game, index) => {
+          const slug = game.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "");
+          const categoryName = game.type === "TD" ? "Tower Defense" : "RPG";
+          const featureText = safeArray(game.features).join(", ");
+          return {
+            id: `static-${slug || index}`,
+            name: game.name,
+            slug: slug || `game-${index}`,
+            description: gameDescriptions[game.name] || `${categoryName} game with ${featureText || game.referenceTitle}`,
+            category: { name: categoryName, slug: game.type.toLowerCase() },
+            supportedAndroid: true,
+            supportedIos: false,
+            warrantyDays: 7,
+            warrantyNote: "รับประกันตามเงื่อนไขร้าน",
+            packages: [
+              {
+                id: `static-package-${slug || index}`,
+                name: "แพ็คบริการมาตรฐาน",
+                price: 150,
+                subtitle: featureText || game.referenceTitle,
+                description: `บริการสำหรับ ${game.name}`,
+                badge: game.type,
+                isRecommended: true,
+                items: safeArray(game.features),
+                highlights: ["ตรวจรายละเอียดก่อนเริ่มงาน", "แจ้งสถานะผ่านแอดมิน", "ดูแลหลังส่งงาน"],
+                delivery: "แจ้งเวลาหลังตรวจงาน",
+                support: "ดูแลหลังส่ง",
+                guarantee: "รับประกัน 7 วัน",
+                audience: "เหมาะกับลูกค้าที่ต้องการสั่งงานรายเกม"
+              }
+            ]
+          };
+        });
+      }
+
+      function normalizeGameName(value) {
+        return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+      }
+
+      function normalizeCatalogType(game) {
+        const explicitType = String(game.catalogType || "").trim().toUpperCase();
+        if (explicitType === "TD" || explicitType === "RPG") return explicitType;
+        const categoryText = `${game.category?.name || ""} ${game.category?.slug || ""}`.toLowerCase();
+        if (categoryText.includes("tower") || categoryText.includes("td")) return "TD";
+        if (categoryText.includes("rpg") || categoryText.includes("roguelike")) return "RPG";
+        return "";
+      }
+
+      function syncReferenceGamesFromGames(sourceGames) {
+        const staticByName = new Map(referenceGames.map((game) => [normalizeGameName(game.name), game]));
+        const dynamicReferenceGames = [];
+
+        safeArray(sourceGames).forEach((game) => {
+          const type = normalizeCatalogType(game);
+          if (!type) return;
+
+          const staticGame = staticByName.get(normalizeGameName(game.name)) || {};
+          const packages = safeArray(game.packages);
+          const packageFeatures = packages.flatMap((pkg) => safeArray(pkg.items || pkg.highlights));
+          const features = packageFeatures.length ? packageFeatures : safeArray(staticGame.features);
+          const fallbackImage = staticGame.playImage || "";
+          const fallbackStore = staticGame.playStore || "";
+          const fallbackReference = staticGame.referenceTitle || game.description || game.name;
+
+          dynamicReferenceGames.push({
+            type,
+            name: game.name,
+            features: features.length ? features : ["สอบถามรายละเอียด"],
+            referenceTitle: game.referenceTitle || fallbackReference,
+            description: game.description || gameDescriptions[game.name] || "",
+            playImage: game.playImage || fallbackImage,
+            playStore: game.playStore || fallbackStore || "#"
+          });
+        });
+
+        if (dynamicReferenceGames.length) {
+          referenceGames = dynamicReferenceGames;
+        }
+      }
+
+      function mergeGamesWithFallback(apiGames) {
+        const referenceByName = new Map(referenceGames.map((game) => [normalizeGameName(game.name), game]));
+        const merged = Array.isArray(apiGames)
+          ? apiGames.map((game) => {
+              const fallback = referenceByName.get(normalizeGameName(game.name)) || {};
+              return {
+                ...game,
+                catalogType: game.catalogType || fallback.type || "",
+                referenceTitle: game.referenceTitle || fallback.referenceTitle || "",
+                playImage: game.playImage || fallback.playImage || "",
+                playStore: game.playStore || fallback.playStore || "",
+                description: game.description || gameDescriptions[game.name] || "",
+              };
+            })
+          : [];
+        const existingNames = new Set(merged.map((game) => normalizeGameName(game.name)));
+        buildStaticGames().forEach((fallbackGame) => {
+          if (!existingNames.has(normalizeGameName(fallbackGame.name))) {
+            merged.push(fallbackGame);
+          }
+        });
+        return merged;
+      }
+
+      // 1. Fetch Games from Back-end (Persistence integration)
+      async function loadGames() {
+        try {
+          const response = await fetch(apiUrl('/api/games'));
+          const contentType = response.headers.get("content-type") || "";
+          if (!response.ok || !contentType.includes("application/json")) {
+            throw new Error("games-api-unavailable");
+          }
+          const result = await response.json();
+          if (result.success && Array.isArray(result.data)) {
+            games = mergeGamesWithFallback(result.data);
+            syncReferenceGamesFromGames(games);
+            renderCreatorReference();
+            renderGames();
+          } else {
+            throw new Error("games-api-invalid");
+          }
+        } catch (error) {
+          games = buildStaticGames();
+          syncReferenceGamesFromGames(games);
+          renderCreatorReference();
+          renderGames();
+          console.warn('Using static games fallback:', error);
+        }
+      }
+
+      function buildMessage() {
+        if (!selectedGame || !selectedPackage) return "";
+        
+        let priceText = `${selectedPackage.price} บาท`;
+        if (couponData) {
+          priceText = `${selectedPackage.price} บาท (ลดเหลือ ${couponData.finalPrice} บาท ด้วยโค้ด ${couponData.code})`;
+        }
+        
+        return [
+          "สนใจบริการเกม",
+          `เกม: ${selectedGame.name}`,
+          `แพ็คเกจ: ${selectedPackage.name}`,
+          `ราคา: ${priceText}`,
+          `ระบบ: ${platform.value}`,
+          "รับประกัน: 7 วัน",
+          `สลิปแจ้งโอน: ${slipData ? 'แนบสลิปแล้ว รอแอดมินตรวจ (' + slipData.transactionId + ')' : 'ส่งสลิปเพื่อแจ้งโอน'}`,
+          `หมายเหตุ: ${customerNote.value || "-"}`,
+          "ส่งจากหน้าเว็บไซต์"
+        ].join("\n");
+      }
+
+      function renderGames() {
+        const keyword = gameSearch.value.trim().toLowerCase();
+        const filteredGames = games.filter((game) => {
+          const searchableText = `${game.name} ${game.slug} ${game.category ? game.category.name : ''}`.toLowerCase();
+          return searchableText.includes(keyword);
+        });
+
+        gameCount.textContent = `${filteredGames.length} เกมที่พบ`;
+        gameGrid.innerHTML = filteredGames
+          .map((game) => {
+            const originalIndex = games.indexOf(game);
+            const packages = safeArray(game.packages);
+            const prices = packages.map(p => Number(p.price || 0)).filter((price) => price > 0);
+            const minPrice = prices.length ? Math.min(...prices) : 150;
+            const catName = game.category ? game.category.name : 'Mobile';
+            const platformTags = [];
+            if (game.supportedAndroid) platformTags.push('<span class="platform-badge">Android</span>');
+            if (game.supportedIos) platformTags.push('<span class="platform-badge">iOS</span>');
+            const initials = escapeHtml(String(game.name || "GS").substring(0, 2).toUpperCase());
+            const mediaMarkup = game.playImage
+              ? `<img src="${escapeHtml(game.playImage)}" alt="${escapeHtml(game.name)} gameplay preview" loading="lazy" decoding="async" onerror="this.closest('.game-card__media').innerHTML='<div class=&quot;game-card__fallback&quot;>${initials}</div>';" />`
+              : `<div class="game-card__fallback">${initials}</div>`;
+
+            return `
+              <article class="glass-card game-card">
+                <div class="game-card__media">${mediaMarkup}</div>
+                <div class="game-card__top">
+                  <div class="game-thumb">${initials}</div>
+                  <div>
+                    <h3>${escapeHtml(game.name)}</h3>
+                    <p>${escapeHtml(catName)}</p>
+                  </div>
+                </div>
+                <p>${escapeHtml(game.description || 'ไม่มีรายละเอียดเพิ่มเติม')}</p>
+                <div class="platforms">
+                  ${platformTags.join("")}
+                  <span class="platform-badge">เริ่มต้น ${minPrice.toLocaleString("th-TH")} บาท</span>
+                </div>
+                <div class="game-card__footer">
+                  <button class="primary-action" type="button" data-game-index="${originalIndex}" onclick="showServiceDetail(${originalIndex})">ดูแพ็คเกจ</button>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      function renderPackages() {
+        if (!selectedGame) return;
+        packageTitle.textContent = `แพ็คเกจ ${selectedGame.name}`;
+        
+        const packages = safeArray(selectedGame.packages);
+        if (!packages.length) {
+          packageGrid.innerHTML = `<p class="muted">ไม่มีแพ็คเกจสำหรับเกมนี้ในขณะนี้</p>`;
+          return;
+        }
+
+        packageGrid.innerHTML = packages
+          .map(
+            (pkg, index) => {
+              const activeClass = selectedPackage && pkg.id === selectedPackage.id ? "selected" : "";
+              const badgeMarkup = pkg.badge ? `<span class="platform-badge">${escapeHtml(pkg.badge)}</span>` : '';
+              const price = Number(pkg.price || 0);
+              return `
+                <article class="glass-card package-card ${activeClass}">
+                  <div class="package-card__header">
+                    <h3>${escapeHtml(pkg.name)}</h3>
+                    ${badgeMarkup}
+                  </div>
+                  <p>${escapeHtml(pkg.subtitle || pkg.description || '')}</p>
+                  <div class="package-card__footer">
+                    <strong class="price-text">${price.toLocaleString("th-TH")} บาท</strong>
+                    <button class="primary-action" type="button" data-package-index="${index}" onclick="selectPackage(${index})">
+                      เลือกแพ็คนี้
+                    </button>
+                  </div>
+                </article>
+              `;
+            }
+          )
+          .join("");
+      }
+
+      function renderCreatorReference() {
+        function renderReferenceCards(target, type) {
+          if (!target) return;
+          target.innerHTML = referenceGames.filter((game) => game.type === type).map((game) => {
+            const preview = game.playImage
+              ? `<img class="reference-thumb" src="${escapeHtml(game.playImage)}" alt="${escapeHtml(game.name)} Play Store preview" loading="lazy" />`
+              : `<div class="reference-thumb" style="display: grid; place-items: center; padding: 18px; text-align: center; color: #6f6279;">เพิ่มรูปเกมในหน้า admin</div>`;
+            const storeButton = game.playStore && game.playStore !== "#"
+              ? `<a class="primary-action" href="${escapeHtml(game.playStore)}" target="_blank" rel="noopener noreferrer">ดูใน Play Store</a>`
+              : `<span class="secondary-action">ยังไม่มีลิงก์ Play Store</span>`;
+            return `
+              <article class="glass-card reference-card">
+                ${preview}
+                <div>
+                  <span class="section-kicker">${escapeHtml(type)}</span>
+                  <h3>${escapeHtml(game.name)}</h3>
+                  <p class="muted" style="margin: 6px 0 0;">ข้อมูลเกม: ${escapeHtml(game.description || gameDescriptions[game.name] || game.referenceTitle)}</p>
+                </div>
+                <div class="reference-features">
+                  ${game.features.map((feature) => `<span class="detail-pill">${escapeHtml(feature)}</span>`).join("")}
+                </div>
+                <div class="reference-actions">
+                  ${storeButton}
+                </div>
+              </article>
+            `;
+          }).join("");
+        }
+
+        renderReferenceCards(tdGameGrid, "TD");
+        renderReferenceCards(rpgGameGrid, "RPG");
+      }
+
+      function updateSummary() {
+        if (!selectedGame || !selectedPackage) return;
+        
+        summaryGame.textContent = selectedGame.name;
+        summaryPackage.textContent = selectedPackage.name;
+        
+        const basePrice = Number(selectedPackage.price || 0);
+        summaryPrice.textContent = `${basePrice.toLocaleString("th-TH")} บาท`;
+        
+        if (couponData) {
+          discountLine.style.display = "flex";
+          finalPriceLine.style.display = "flex";
+          summaryDiscount.textContent = `-${Number(couponData.discountAmount || 0).toLocaleString("th-TH")} บาท`;
+          summaryFinalPrice.textContent = `${Number(couponData.finalPrice || 0).toLocaleString("th-TH")} บาท`;
+        } else {
+          discountLine.style.display = "none";
+          finalPriceLine.style.display = "none";
+        }
+        
+        messagePreview.textContent = buildMessage();
+      }
+
+      function showServiceDetail(gameIndex) {
+        selectedGame = games[gameIndex] || games[0];
+        const packages = safeArray(selectedGame.packages);
+        selectedPackage = packages.length ? packages[0] : null;
+        couponData = null; // reset coupon
+        document.getElementById('couponCode').value = '';
+        document.getElementById('couponMessage').style.display = 'none';
+        
+        document.querySelector("#packages").hidden = false;
+        document.querySelector("#order").hidden = false;
+        document.querySelector("#orderSuccess").hidden = true;
+        
+        renderPackages();
+        updateSummary();
+        document.querySelector("#packages").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function selectPackage(packageIndex) {
+        if (!selectedGame) return;
+        const packages = safeArray(selectedGame.packages);
+        selectedPackage = packages[packageIndex] || packages[0];
+        couponData = null; // reset coupon on package change
+        document.getElementById('couponCode').value = '';
+        document.getElementById('couponMessage').style.display = 'none';
+        
+        renderPackages();
+        updateSummary();
+      }
+
+      function showOrderSuccess(orderId, payload) {
+        document.getElementById("successOrderId").textContent = orderId;
+        document.getElementById("successGame").textContent = payload.gameName;
+        document.getElementById("successPackage").textContent = payload.packageName;
+        document.getElementById("successPlatform").textContent = payload.platform;
+        document.getElementById("successPrice").textContent = formatPrice(payload.finalPrice);
+        document.getElementById("successMessage").textContent = [
+          `เลขออเดอร์: ${orderId}`,
+          `เกม: ${payload.gameName}`,
+          `แพ็คเกจ: ${payload.packageName}`,
+          `ยอดชำระ: ${formatPrice(payload.finalPrice)}`,
+          `ระบบ: ${payload.platform}`,
+          `สลิป: ${payload.slipUrl ? "แนบแล้ว รอแอดมินตรวจสอบ" : "ยังไม่ได้แนบ"}`,
+          "กรุณาส่งเลขออเดอร์นี้ให้แอดมินผ่านช่องทางติดต่อด้านล่าง"
+        ].join("\n");
+        document.getElementById("orderSuccess").hidden = false;
+        document.getElementById("trackingOrderId").value = orderId;
+        trackOrder();
+        document.getElementById("orderSuccess").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function createLocalOrderId() {
+        const now = new Date();
+        const datePart = [
+          now.getFullYear(),
+          String(now.getMonth() + 1).padStart(2, "0"),
+          String(now.getDate()).padStart(2, "0")
+        ].join("");
+        const timePart = [
+          String(now.getHours()).padStart(2, "0"),
+          String(now.getMinutes()).padStart(2, "0"),
+          String(now.getSeconds()).padStart(2, "0")
+        ].join("");
+        const randomPart = Math.random().toString(16).slice(2, 6).toUpperCase();
+        return `WEB-${datePart}-${timePart}-${randomPart}`;
+      }
+
+      function getLocalOrders() {
+        try {
+          return JSON.parse(localStorage.getItem(LOCAL_ORDERS_KEY) || "{}");
+        } catch {
+          return {};
+        }
+      }
+
+      function saveLocalOrder(orderId, payload) {
+        const orders = getLocalOrders();
+        orders[orderId] = {
+          id: orderId,
+          game_name: payload.gameName,
+          package_name: payload.packageName,
+          final_price: payload.finalPrice,
+          status: "pending",
+          created_at: new Date().toISOString(),
+          platform: payload.platform,
+          customer_note: payload.customerNote || "",
+          localOnly: true
+        };
+        localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(orders));
+      }
+
+      function readLocalOrder(orderId) {
+        return getLocalOrders()[orderId] || null;
+      }
+
+      function renderTrackingData(data) {
+        const resultBox = document.getElementById("trackingResult");
+        resultBox.style.display = "block";
+        document.getElementById("trackResultId").textContent = data.id;
+        const statusEl = document.getElementById("trackResultStatus");
+        statusEl.textContent = data.status === "pending" ? "รอดำเนินการ" : data.status === "processing" ? "กำลังดำเนินการ" : data.status === "completed" ? "เติมสำเร็จ ✅" : "ยกเลิก ❌";
+        statusEl.className = `risk-pill ${data.status === "completed" ? "low" : data.status === "processing" ? "medium" : "high"}`;
+        document.getElementById("trackResultGame").textContent = data.game_name;
+        document.getElementById("trackResultPackage").textContent = data.package_name;
+        document.getElementById("trackResultPrice").textContent = formatPrice(data.final_price);
+        document.getElementById("trackResultTime").textContent = new Date(data.created_at).toLocaleString("th-TH");
+        const progressEl = document.getElementById("trackProgressBar");
+        if (data.status === "pending") {
+          progressEl.style.width = "15%";
+        } else if (data.status === "processing") {
+          progressEl.style.width = "55%";
+        } else if (data.status === "completed") {
+          progressEl.style.width = "100%";
+        } else {
+          progressEl.style.width = "0%";
+        }
+      }
+
+      // 2. Slip Verification Client Logic (Feature 2)
+      async function handleSlipUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const slipFileName = document.getElementById("slipFileName");
+        const slipVerifyStatus = document.getElementById("slipVerifyStatus");
+        
+        slipFileName.textContent = file.name;
+        slipVerifyStatus.style.display = "inline-flex";
+        slipVerifyStatus.className = "risk-pill medium";
+        slipVerifyStatus.textContent = "กำลังตรวจสอบรูปสลิป...";
+
+        if (!selectedPackage) {
+          slipData = null;
+          slipFileName.textContent = "ยังไม่ได้อัปโหลดสลิป";
+          slipVerifyStatus.style.display = "none";
+          event.target.value = "";
+          alert("กรุณาเลือกเกมและแพ็คเกจก่อนอัปโหลดสลิป");
+          return;
+        }
+        if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 3 * 1024 * 1024) {
+          slipData = null;
+          slipVerifyStatus.className = "risk-pill high";
+          slipVerifyStatus.textContent = "รองรับ PNG, JPG หรือ WebP ขนาดไม่เกิน 3MB";
+          return;
+        }
+
+        const priceToVerify = couponData ? Number(couponData.finalPrice || 0) : Number(selectedPackage.price || 0);
+
+        // Convert file to Base64 to send via JSON
+        const reader = new FileReader();
+        reader.onloadend = async function () {
+          try {
+            const response = await fetch(apiUrl('/api/orders/verify-slip'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                image: reader.result,
+                price: priceToVerify
+              })
+            });
+            const result = await response.json();
+            if (result.success && result.data.accepted) {
+              slipData = result.data;
+              slipVerifyStatus.className = result.data.verified ? "risk-pill low" : "risk-pill medium";
+              slipVerifyStatus.textContent = result.data.verified
+                ? `สลิปตรวจผ่าน (${result.data.transactionId})`
+                : `รูปผ่าน ตรวจยอดโดยแอดมิน (${result.data.transactionId})`;
+              updateSummary();
+            } else {
+              slipData = null;
+              slipVerifyStatus.className = "risk-pill high";
+              slipVerifyStatus.textContent = `❌ สลิปไม่ถูกต้อง: ${result.error || 'ตรวจสอบล้มเหลว'}`;
+              updateSummary();
+            }
+          } catch (err) {
+            slipData = null;
+            slipVerifyStatus.className = "risk-pill high";
+            slipVerifyStatus.textContent = "❌ เกิดข้อผิดพลาดในการตรวจสอบสลิป";
+            updateSummary();
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // 3. Coupon System Client Logic (Feature 6)
+      async function applyCoupon() {
+        if (!selectedPackage) return;
+        const codeInput = document.getElementById("couponCode").value.trim();
+        const msgEl = document.getElementById("couponMessage");
+        
+        if (!codeInput) {
+          msgEl.style.color = "#8a4c6a";
+          msgEl.style.display = "block";
+          msgEl.textContent = "กรุณากรอกรหัสคูปอง";
+          return;
+        }
+
+        try {
+          const response = await fetch(apiUrl(`/api/coupons/validate?code=${encodeURIComponent(codeInput)}&price=${Number(selectedPackage.price || 0)}`));
+          const result = await response.json();
+          if (result.success) {
+            couponData = result.data;
+            msgEl.style.color = "#4f6c57";
+            msgEl.style.display = "block";
+            msgEl.textContent = `ใช้งานโค้ด ${couponData.code} สำเร็จ! ลดราคา ${Number(couponData.discountAmount || 0).toLocaleString("th-TH")} บาท`;
+            
+            // Recheck slip if uploaded
+            if (slipData) {
+              document.getElementById("slipVerifyStatus").style.display = "none";
+              slipData = null;
+              document.getElementById("slipFileName").textContent = "กรุณาอัปโหลดสลิปยอดเงินใหม่";
+            }
+
+            updateSummary();
+          } else {
+            couponData = null;
+            msgEl.style.color = "#8a4c6a";
+            msgEl.style.display = "block";
+            msgEl.textContent = result.error || "รหัสคูปองไม่ถูกต้อง";
+            updateSummary();
+          }
+        } catch (err) {
+          couponData = null;
+          msgEl.style.color = "#8a4c6a";
+          msgEl.style.display = "block";
+          msgEl.textContent = "ล้มเหลวในการส่งข้อมูลตรวจสอบคูปอง";
+          updateSummary();
+        }
+      }
+
+      // 4. Order Tracking Widget Client Logic (Feature 3)
+      async function trackOrder() {
+        const orderIdInput = document.getElementById("trackingOrderId").value.trim();
+        const resultBox = document.getElementById("trackingResult");
+        
+        if (!orderIdInput) {
+          alert("กรุณาระบุเลขออเดอร์");
+          return;
+        }
+
+        try {
+          const response = await fetch(apiUrl(`/api/orders/track?orderId=${encodeURIComponent(orderIdInput)}`));
+          const result = await response.json();
+          if (result.success) {
+            renderTrackingData(result.data);
+          } else {
+            const localOrder = readLocalOrder(orderIdInput);
+            if (localOrder) {
+              renderTrackingData(localOrder);
+            } else {
+              alert(result.error || "ไม่พบออเดอร์ดังกล่าว");
+              resultBox.style.display = "none";
+            }
+          }
+        } catch (err) {
+          const localOrder = readLocalOrder(orderIdInput);
+          if (localOrder) {
+            renderTrackingData(localOrder);
+          } else {
+            alert("ไม่สามารถดึงข้อมูลติดตามออเดอร์ได้");
+            resultBox.style.display = "none";
+          }
+        }
+      }
+
+      window.showServiceDetail = showServiceDetail;
+      window.selectPackage = selectPackage;
+
+      gameGrid.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-game-index]");
+        if (!button) return;
+        showServiceDetail(Number(button.dataset.gameIndex));
+      });
+
+      packageGrid.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-package-index]");
+        if (!button) return;
+        selectPackage(Number(button.dataset.packageIndex));
+      });
+
+      searchButton.addEventListener("click", renderGames);
+      gameSearch.addEventListener("input", renderGames);
+      platform.addEventListener("change", updateSummary);
+      customerNote.addEventListener("input", updateSummary);
+
+      chatButton.addEventListener("click", async () => {
+        if (!selectedGame || !selectedPackage) return;
+        chatButton.disabled = true;
+        const originalButtonText = chatButton.textContent;
+        chatButton.textContent = "กำลังสร้างออเดอร์...";
+        
+        try {
+          const orderPayload = {
+            gameId: selectedGame.id,
+            packageId: selectedPackage.id,
+            gameName: selectedGame.name,
+            packageName: selectedPackage.name,
+            price: Number(selectedPackage.price || 0),
+            discountAmount: couponData ? Number(couponData.discountAmount || 0) : 0,
+            finalPrice: couponData ? Number(couponData.finalPrice || 0) : Number(selectedPackage.price || 0),
+            platform: platform.value,
+            customerNote: customerNote.value,
+            contactMethod: "telegram",
+            couponCode: couponData ? couponData.code : "",
+            slipUrl: slipData ? slipData.slipUrl : "",
+            slipVerified: slipData && slipData.verified ? 1 : 0
+          };
+          
+          const response = await fetch(apiUrl('/api/orders'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderPayload)
+          });
+
+          if (!response.ok) {
+            throw new Error("orders-api-unavailable");
+          }
+          const result = await response.json();
+          
+          if (result.success) {
+            saveLocalOrder(result.data.orderId, orderPayload);
+            showOrderSuccess(result.data.orderId, orderPayload);
+          } else {
+            alert('เกิดข้อผิดพลาด: ' + (result.error || 'ไม่สามารถส่งออเดอร์ได้'));
+          }
+        } catch (error) {
+          console.error('Order error:', error);
+          const localOrderId = createLocalOrderId();
+          saveLocalOrder(localOrderId, orderPayload);
+          showOrderSuccess(localOrderId, orderPayload);
+        } finally {
+          chatButton.disabled = false;
+          chatButton.textContent = originalButtonText;
+        }
+      });
+
+      // App Initialization
+      window.onload = async () => {
+        await loadGames();
+      };
+    </script>
+    <!-- React 3D Entry Script -->
+    <script type="module" src="./frontend/entry.tsx"></script>
+  </body>
+</html>

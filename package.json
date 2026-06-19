@@ -1,0 +1,47 @@
+{
+  "name": "game-services-web-structure",
+  "private": true,
+  "version": "1.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "start": "python server.py",
+    "start:python": "python server.py",
+    "build": "python tools/build_frontend.py",
+    "check:python": "python -m py_compile server.py",
+    "qa": "python tools/qa_check.py",
+    "check": "python tools/qa_check.py",
+    "smoke": "python tools/smoke_test.py",
+    "export:excel": "python tools/export_excel.py",
+    "sync:media": "python tools/sync_game_media.py",
+    "cache:media": "python tools/cache_game_media.py",
+    "export:static": "python tools/export_static.py",
+    "package:backend": "python tools/package_backend.py",
+    "configure:backend": "python tools/configure_backend.py",
+    "configure:site": "python tools/configure_site_origin.py",
+    "phase3:preflight": "python tools/phase3_preflight.py",
+    "go-live:status": "python tools/write_go_live_status.py",
+    "go-live:connect": "python tools/go_live_connect.py",
+    "step2:prepare": "python tools/prepare_step2_release.py",
+    "tokens:check": "python tools/manage_tokens.py",
+    "tokens:setup": "python tools/manage_tokens.py --write-env",
+    "phase3:build": "python tools/phase3_build.py",
+    "phase4:uat": "python tools/phase4_order_uat.py",
+    "phase4:uat:create": "python tools/phase4_order_uat.py --create"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.21.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.1",
+    "@vitejs/plugin-react": "^6.0.2",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  }
+}
