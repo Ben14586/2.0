@@ -27,6 +27,18 @@ try:
 except ImportError:
     requests = None
 
+try:
+    import psycopg2
+    import psycopg2.extras
+except ImportError:
+    psycopg2 = None
+
+try:
+    import cloudinary
+    import cloudinary.uploader
+except ImportError:
+    cloudinary = None
+
 ROOT = Path(__file__).resolve().parent
 
 def load_env_file(path):
@@ -73,6 +85,11 @@ if not UPLOADS_DIR.is_absolute():
 UPLOADS_DIR = UPLOADS_DIR.resolve()
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+CLOUDINARY_URL = os.getenv("CLOUDINARY_URL", "").strip()
+if CLOUDINARY_URL and cloudinary:
+    cloudinary.config() # Auto-configures from CLOUDINARY_URL env var
+
 telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 line_notify_token = os.getenv("LINE_NOTIFY_TOKEN", "").strip()
@@ -99,7 +116,62 @@ BOOTSTRAP_PASSWORD_NOTICE = ""
 
 # --- Database helpers ---
 
+class PostgresCursorWrapper:
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def _convert_sql(self, sql):
+        sql = sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+        if "PRAGMA table_info(" in sql:
+            table = sql.split("PRAGMA table_info(")[1].split(")")[0]
+            return f"SELECT column_name as name FROM information_schema.columns WHERE table_name = '{table}'"
+        return sql.replace("?", "%s")
+
+    def execute(self, sql, params=()):
+        self._cursor.execute(self._convert_sql(sql), params)
+        return self
+
+    def executemany(self, sql, params_list):
+        self._cursor.executemany(self._convert_sql(sql), params_list)
+        return self
+
+    def fetchone(self):
+        return self._cursor.fetchone()
+
+    def fetchall(self):
+        return self._cursor.fetchall()
+
+    @property
+    def description(self):
+        return self._cursor.description
+
+class PostgresDBWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None:
+            self.commit()
+        else:
+            self.conn.rollback()
+        self.close()
+
+    def cursor(self):
+        return PostgresCursorWrapper(self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor))
+
+    def commit(self):
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
+
 def get_db():
+    if DATABASE_URL and psycopg2:
+        conn = psycopg2.connect(DATABASE_URL)
+        return PostgresDBWrapper(conn)
     conn = sqlite3.connect(DATABASE_FILE)
     conn.row_factory = sqlite3.Row
     return conn
@@ -2189,10 +2261,17 @@ class Handler(SimpleHTTPRequestHandler):
                 
                 file_name = f"slip-{secrets.token_hex(8)}.{file_ext}"
                 file_path = uploads_dir / file_name
-                with open(file_path, "wb") as f:
-                    f.write(img_bytes)
                 
-                slip_file_url = f"/uploads/{file_name}"
+                if CLOUDINARY_URL and cloudinary:
+                    try:
+                        res = cloudinary.uploader.upload(img_bytes, public_id=file_name.split('.')[0], resource_type="image", folder="game_slips")
+                        slip_file_url = res.get("secure_url")
+                    except Exception as e:
+                        return self._send_json(500, {"success": False, "error": f"อัปโหลดรูปล้มเหลว: {e}"})
+                else:
+                    with open(file_path, "wb") as f:
+                        f.write(img_bytes)
+                    slip_file_url = f"/uploads/{file_name}"
                 check_id = f"SLIP-{secrets.token_hex(6).upper()}"
                 with get_db() as conn:
                     cursor = conn.cursor()
@@ -2338,11 +2417,20 @@ class Handler(SimpleHTTPRequestHandler):
             file_hash = hashlib.sha256(img_bytes).hexdigest()[:16]
             file_name = f"{safe_stem}-{file_hash}.{file_ext}"
             file_path = uploads_dir / file_name
-            if not file_path.exists():
-                file_path.write_bytes(img_bytes)
+
+            if CLOUDINARY_URL and cloudinary:
+                try:
+                    res = cloudinary.uploader.upload(img_bytes, public_id=file_name.split('.')[0], resource_type="image", folder="game_images")
+                    image_url = res.get("secure_url")
+                except Exception as e:
+                    conn.close()
+                    return self._send_json(500, {"success": False, "error": f"อัปโหลดรูปล้มเหลว: {e}"})
+            else:
+                if not file_path.exists():
+                    file_path.write_bytes(img_bytes)
+                image_url = f"/uploads/game-images/{file_name}"
 
             conn.close()
-            image_url = f"/uploads/game-images/{file_name}"
             return self._send_json(200, {
                 "success": True,
                 "data": {
