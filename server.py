@@ -14,6 +14,7 @@ import secrets
 import base64
 import html
 import struct
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import urllib.parse
 import urllib.request
@@ -21,6 +22,8 @@ import zipfile
 import io
 import subprocess
 import shutil as _shutil_for_which
+
+load_dotenv()
 
 try:
     import requests
@@ -121,11 +124,12 @@ class PostgresCursorWrapper:
         self._cursor = cursor
 
     def _convert_sql(self, sql):
+        sql = sql.replace('%', '%%').replace('?', '%s')
         sql = sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
         if "PRAGMA table_info(" in sql:
             table = sql.split("PRAGMA table_info(")[1].split(")")[0]
             return f"SELECT column_name as name FROM information_schema.columns WHERE table_name = '{table}'"
-        return sql.replace("?", "%s")
+        return sql
 
     def execute(self, sql, params=()):
         self._cursor.execute(self._convert_sql(sql), params)
@@ -1768,7 +1772,10 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        if suffix in {".html"}:
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        else:
+            self.send_header("Cache-Control", "public, max-age=31536000, immutable")
         self._set_cors_headers()
         self.end_headers()
         self.wfile.write(data)
@@ -1800,6 +1807,39 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
+        if path == "/robots.txt":
+            robot_txt = "User-agent: *\nAllow: /\nSitemap: https://game-services.web.app/sitemap.xml\n"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Cache-Control", "public, max-age=86400")
+            self._set_cors_headers()
+            self.end_headers()
+            self.wfile.write(robot_txt.encode("utf-8"))
+            return
+
+        if path == "/sitemap.xml":
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM games WHERE is_active = 1")
+            active_games = cursor.fetchall()
+            conn.close()
+            
+            sitemap_xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+            sitemap_xml.append('  <url>\n    <loc>https://game-services.web.app/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>')
+            
+            for g in active_games:
+                sitemap_xml.append(f'  <url>\n    <loc>https://game-services.web.app/#{g["id"]}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>')
+                
+            sitemap_xml.append('</urlset>')
+            
+            self.send_response(200)
+            self.send_header("Content-Type", "application/xml; charset=utf-8")
+            self.send_header("Cache-Control", "public, max-age=86400")
+            self._set_cors_headers()
+            self.end_headers()
+            self.wfile.write("\n".join(sitemap_xml).encode("utf-8"))
+            return
+
 
         conn = get_db()
 
@@ -2107,6 +2147,9 @@ class Handler(SimpleHTTPRequestHandler):
             if path in {"/", "/index.html"} and (ROOT / "dist" / "index.html").exists():
                 conn.close()
                 return self._serve_file(ROOT / "dist" / "index.html")
+            if path in {"/admin", "/admin/", "/admin.html"} and (ROOT / "dist" / "admin.html").exists():
+                conn.close()
+                return self._serve_file(ROOT / "dist" / "admin.html")
             try:
                 dist_path.relative_to((ROOT / "dist").resolve())
                 if dist_path.is_file():
@@ -2117,6 +2160,8 @@ class Handler(SimpleHTTPRequestHandler):
 
         if path == "/":
             self.path = "/index.html"
+        elif path in {"/admin", "/admin/"}:
+            self.path = "/admin.html"
 
         conn.close()
         return super().do_GET()

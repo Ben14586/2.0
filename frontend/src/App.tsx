@@ -26,16 +26,23 @@ export function App() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        let data: PublicData | null = window.STATIC_GAMES;
+        let data: any = window.STATIC_GAMES;
         
         if (!data) {
-          const response = await fetch('/api/public-data');
+          const response = await fetch('/api/games');
           if (!response.ok) throw new Error('Failed to fetch data');
           const json = await response.json();
           data = json.data;
         }
 
-        if (data) {
+        if (Array.isArray(data)) {
+          const extractedCategories = Array.from(new Set(data.map((g: Game) => g.category.name))).map(name => ({
+            name: name,
+            slug: data.find((g: Game) => g.category.name === name)?.category.slug || ''
+          }));
+          setCategories(extractedCategories);
+          setGames(data);
+        } else if (data) {
           setCategories(data.categories || []);
           setGames(data.games || []);
         }
