@@ -91,7 +91,11 @@ def init_new_tables():
     # Insert default admin if no admin exists
     cursor.execute("SELECT COUNT(*) FROM admins")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO admins (username, password) VALUES (?, ?)", ("admin", "admin"))
+        import os
+        import hashlib
+        default_admin_pass = os.getenv("ADMIN_PASSWORD", "GameServices@2026!")
+        hashed_pass = hashlib.sha256(default_admin_pass.encode()).hexdigest()
+        cursor.execute("INSERT INTO admins (username, password_hash) VALUES (?, ?)", ("admin", hashed_pass))
         
     conn.commit()
     conn.close()
