@@ -58,6 +58,10 @@ async def login(req: LoginRequest, db=Depends(get_db)):
     if not user or user["password_hash"] != hash_password(req.password):
         raise HTTPException(status_code=401, detail="Invalid username or password")
         
+    if user.get("is_banned"):
+        reason = user.get("ban_reason") or "ละเมิดกฎการใช้งาน"
+        raise HTTPException(status_code=403, detail=f"บัญชีของคุณถูกระงับการใช้งาน: {reason}")
+        
     user_data = dict(user)
     user_data.pop("password_hash", None)
     
@@ -109,3 +113,60 @@ async def get_leaderboard(db=Depends(get_db)):
     """)
     top_users = [dict(r) for r in cursor.fetchall()]
     return {"success": True, "leaderboard": top_users}
+
+# --- ADMIN USER MANAGEMENT ENDPOINTS ---
+from ..dependencies import verify_admin
+
+@router.get("/admin/users")
+async def admin_get_users(db=Depends(get_db), is_admin=Depends(verify_admin)):
+    cursor = db.cursor()
+    cursor.execute("SELECT id, username, tel, display_name, points, total_spent, vip_level, is_banned, ban_reason, created_at FROM users ORDER BY id DESC")
+    users = [dict(r) for r in cursor.fetchall()]
+    return {"success": True, "data": users}
+
+class AdminUpdateUserRequest(BaseModel):
+    user_id: int
+    display_name: str
+    tel: Optional[str] = None
+    points: int
+    total_spent: float
+    vip_level: str
+
+@router.post("/admin/users/update")
+async def admin_update_user(req: AdminUpdateUserRequest, db=Depends(get_db), is_admin=Depends(verify_admin)):
+    cursor = db.cursor()
+    cursor.execute("""
+        UPDATE users 
+        SET display_name = ?, tel = ?, points = ?, total_spent = ?, vip_level = ?
+        WHERE id = ?
+    """, (req.display_name, req.tel, req.points, req.total_spent, req.vip_level, req.user_id))
+    db.commit()
+    return {"success": True, "message": "User updated successfully"}
+
+class AdminUserStatusRequest(BaseModel):
+    user_id: int
+    is_banned: bool
+    ban_reason: Optional[str] = None
+
+@router.post("/admin/users/status")
+async def admin_update_user_status(req: AdminUserStatusRequest, db=Depends(get_db), is_admin=Depends(verify_admin)):
+    cursor = db.cursor()
+    cursor.execute("""
+        UPDATE users 
+        SET is_banned = ?, ban_reason = ?
+        WHERE id = ?
+    """, (1 if req.is_banned else 0, req.ban_reason, req.user_id))
+    db.commit()
+    return {"success": True, "message": "User status updated successfully"}
+
+class AdminResetPasswordRequest(BaseModel):
+    user_id: int
+    new_password: str
+
+@router.post("/admin/users/reset-password")
+async def admin_reset_password(req: AdminResetPasswordRequest, db=Depends(get_db), is_admin=Depends(verify_admin)):
+    hashed_pw = hash_password(req.new_password)
+    cursor = db.cursor()
+    cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hashed_pw, req.user_id))
+    db.commit()
+    return {"success": True, "message": "Password reset successfully"}

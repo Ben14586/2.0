@@ -5,6 +5,7 @@ import { OrderManager } from './pages/OrderManager';
 import { CatalogManager } from './pages/CatalogManager';
 import { CouponManager } from './pages/CouponManager';
 import { SettingsManager } from './pages/SettingsManager';
+import { UserManager } from './pages/UserManager';
 import { AdminLogin } from './components/AdminLogin';
 
 export function AdminApp() {
@@ -42,6 +43,7 @@ export function AdminApp() {
         <div className="content">
           {activeTab === 'dashboard' && <Dashboard />}
           {activeTab === 'orders' && <OrderManager />}
+          {activeTab === 'users' && <UserManager />}
           {activeTab === 'catalog' && <CatalogManager />}
           {activeTab === 'coupons' && <CouponManager />}
           {activeTab === 'settings' && <SettingsManager />}

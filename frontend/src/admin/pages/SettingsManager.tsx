@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 
+const API_BASE_URL = (window as any).API_BASE_URL || "http://localhost:3000";
+
 export const SettingsManager: React.FC = () => {
   const [settings, setSettings] = useState({
     slipok_api_key: "",
@@ -14,7 +16,7 @@ export const SettingsManager: React.FC = () => {
   const fetchSettings = async () => {
     try {
       const token = localStorage.getItem("admin_token");
-      const res = await fetch("http://localhost:3000/api/admin-settings", {
+      const res = await fetch(`${API_BASE_URL}/api/admin-settings`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -41,7 +43,7 @@ export const SettingsManager: React.FC = () => {
     setMessage("");
     try {
       const token = localStorage.getItem("admin_token");
-      const res = await fetch("http://localhost:3000/api/admin-settings", {
+      const res = await fetch(`${API_BASE_URL}/api/admin-settings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -65,7 +67,7 @@ export const SettingsManager: React.FC = () => {
   const handleTestTelegram = async () => {
     try {
       const token = localStorage.getItem("admin_token");
-      const res = await fetch("http://localhost:3000/api/admin-test-telegram", {
+      const res = await fetch(`${API_BASE_URL}/api/admin-test-telegram`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });

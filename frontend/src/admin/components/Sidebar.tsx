@@ -9,6 +9,7 @@ export function Sidebar({ activeTab, onSelectTab }: SidebarProps) {
   const navItems = [
     { id: 'dashboard', label: '📊 ภาพรวมระบบ' },
     { id: 'orders', label: '📦 รายการคำสั่งซื้อ' },
+    { id: 'users', label: '👥 จัดการผู้ใช้งาน' },
     { id: 'catalog', label: '🎮 จัดการข้อมูลสินค้า' },
     { id: 'coupons', label: '🎫 จัดการคูปอง' },
     { id: 'settings', label: '⚙️ ตั้งค่าระบบ' }
