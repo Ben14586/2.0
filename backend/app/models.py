@@ -23,6 +23,8 @@ class User(Base):
 class Admin(Base):
     __tablename__ = "admins"
     id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String, unique=True, index=True)
+    password = Column(String)
     token = Column(String, unique=True, index=True)
     token_expires_at = Column(Float)
 

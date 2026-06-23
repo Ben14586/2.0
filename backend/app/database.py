@@ -84,7 +84,15 @@ def init_new_tables():
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     """)
+    # Create SQLAlchemy models if they don't exist
+    from .models import Base
+    Base.metadata.create_all(bind=engine)
+
+    # Insert default admin if no admin exists
+    cursor.execute("SELECT COUNT(*) FROM admins")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("INSERT INTO admins (username, password) VALUES (?, ?)", ("admin", "admin"))
+        
     conn.commit()
     conn.close()
-
 init_new_tables()
