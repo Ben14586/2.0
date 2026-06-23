@@ -1,6 +1,5 @@
 __pycache__/
 *.pyc
-*.db
 *.zip
 .env
 node_modules/
@@ -9,3 +8,5 @@ backend-deploy/
 .git/
 exports/
 uploads/slip-*
+.venv/
+.qodo/
