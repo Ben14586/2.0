@@ -6,3 +6,4 @@ pydantic>=2.0.0
 requests>=2.31.0
 google-play-scraper>=1.2.7
 crcmod>=1.7
+SQLAlchemy>=2.0.0
