@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: game_services_web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3000
+      - DATABASE_FILE=/app/data/database.db
+      - ENVIRONMENT=production
+      # Uncomment and set these if you want to override database settings via ENV
+      # - SLIPOK_API_KEY=your_key
+      # - SLIPOK_BRANCH_ID=your_branch
+      # - TELEGRAM_BOT_TOKEN=your_token
+      # - TELEGRAM_CHAT_ID=your_chat_id
+    volumes:
+      # Mount the data directory for persistent SQLite database
+      - ./data:/app/data
+      # Mount the uploads directory for persistent images
+      - ./uploads:/app/uploads
+    networks:
+      - webnet
+
+networks:
+  webnet:
+    driver: bridge

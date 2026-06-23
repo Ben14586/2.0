@@ -9,10 +9,19 @@ export function Dashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/admin/stats');
+        const response = await fetch('/api/admin-dashboard', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+          }
+        });
         const data = await response.json();
         if (data.success) {
-          setStats(data.data.summary);
+          setStats({
+            total_orders: data.data.summary.totalLeads || 0,
+            total_sales: 0, // Not provided by this endpoint yet
+            pending_count: data.data.summary.newLeads || 0,
+            completed_count: (data.data.summary.totalLeads || 0) - (data.data.summary.newLeads || 0)
+          });
           
           // Generate mock chart data since the backend doesn't provide time-series yet
           // In a real scenario, the backend should return daily sales.
@@ -41,17 +50,17 @@ export function Dashboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div className="title">
-        <h2>แดชบอร์ดสรุปภาพรวม</h2>
-        <p>สถิติการขายและสถานะระบบ</p>
+        <h2>ภาพรวมระบบ</h2>
+        <p>สถิติและสถานะการทำงาน</p>
       </div>
 
       <div className="metrics">
         <div className="metric">
-          <span className="muted">ออเดอร์ทั้งหมด</span>
+          <span className="muted">คำสั่งซื้อทั้งหมด</span>
           <strong>{stats.total_orders}</strong>
         </div>
         <div className="metric">
-          <span className="muted">ยอดขายสุทธิ</span>
+          <span className="muted">ยอดขายรวม</span>
           <strong style={{ color: 'var(--accent-2)' }}>฿{stats.total_sales.toLocaleString('th-TH')}</strong>
         </div>
         <div className="metric">
@@ -59,13 +68,13 @@ export function Dashboard() {
           <strong style={{ color: 'var(--warn)' }}>{stats.pending_count}</strong>
         </div>
         <div className="metric">
-          <span className="muted">สำเร็จแล้ว</span>
+          <span className="muted">เสร็จสิ้น</span>
           <strong style={{ color: 'var(--good)' }}>{stats.completed_count}</strong>
         </div>
       </div>
 
       <div className="card pad">
-        <h3 style={{ marginBottom: '16px' }}>ยอดขายสัปดาห์นี้</h3>
+        <h3 style={{ marginBottom: '16px' }}>ยอดขายรายสัปดาห์</h3>
         <div style={{ width: '100%', height: '300px' }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>

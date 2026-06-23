@@ -15,15 +15,15 @@ export function Hero({ onSearch }: HeroProps) {
 
   return (
     <section className="hero">
-      <div className="glass-card hero-copy">
-        <p className="eyebrow">Game Service Commerce Platform</p>
-        <h1>
-          <span>บริการเกมมือถือครบวงจร</span>
-          <span className="nowrap">สั่งซื้อง่าย ดูแลครบ</span>
+      <div className="glass-card hero-copy" style={{ textAlign: 'center', padding: '60px 24px', maxWidth: '800px', margin: '0 auto', border: 'none', background: 'transparent', boxShadow: 'none' }}>
+        <p className="eyebrow" style={{ fontSize: '14px', letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--primary)', marginBottom: '16px', fontWeight: 600 }}>Premium Game Services</p>
+        <h1 style={{ fontSize: '3.5rem', fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.02em', marginBottom: '24px' }}>
+          <span style={{ display: 'block', color: 'var(--text)' }}>ยกระดับการเล่นเกม</span>
+          <span style={{ display: 'block', background: 'linear-gradient(135deg, #FF6B6B, #845EC2)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>ให้เหนือกว่าที่เคย</span>
         </h1>
-        <p>
-          <span>เลือกเกมและแพ็กเกจที่ต้องการ ดูรายละเอียด ราคา และรายการในแพ็กได้ชัดเจน</span>
-          <span>พร้อมระบบติดตามออเดอร์ แจ้งข้อมูลครบถ้วน และหลังบ้านที่พร้อมใช้งานจริง</span>
+        <p style={{ fontSize: '1.1rem', color: 'var(--muted)', maxWidth: '600px', margin: '0 auto 40px auto', lineHeight: 1.6 }}>
+          บริการเติมเกมและแพ็กเกจมืออาชีพ สะดวก รวดเร็ว และปลอดภัย 
+          <br/>พร้อมทีมงานคุณภาพดูแลคุณตลอด 24 ชั่วโมง
         </p>
         <div className="hero-badges">
           <span className="section-kicker">บริการครบวงจร</span>

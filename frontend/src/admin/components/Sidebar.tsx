@@ -7,10 +7,11 @@ interface SidebarProps {
 
 export function Sidebar({ activeTab, onSelectTab }: SidebarProps) {
   const navItems = [
-    { id: 'dashboard', label: '📊 แดชบอร์ดสรุป' },
-    { id: 'orders', label: '📦 รายการออเดอร์' },
-    { id: 'catalog', label: '🎮 จัดการแคตตาล็อก' },
-    { id: 'coupons', label: '🎫 ระบบคูปองส่วนลด' }
+    { id: 'dashboard', label: '📊 ภาพรวมระบบ' },
+    { id: 'orders', label: '📦 รายการคำสั่งซื้อ' },
+    { id: 'catalog', label: '🎮 จัดการข้อมูลสินค้า' },
+    { id: 'coupons', label: '🎫 จัดการคูปอง' },
+    { id: 'settings', label: '⚙️ ตั้งค่าระบบ' }
   ];
 
   return (
@@ -42,7 +43,7 @@ export function Sidebar({ activeTab, onSelectTab }: SidebarProps) {
         
         <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--line)' }}>
           <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--muted)' }}>
-            <span>← กลับหน้าร้านค้า</span>
+            <span>← กลับหน้าแรก</span>
           </a>
         </div>
       </div>

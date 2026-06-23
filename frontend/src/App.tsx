@@ -4,7 +4,9 @@ import { Hero } from './components/home/Hero';
 import { Footer } from './components/layout/Footer';
 import { GameList } from './components/games/GameList';
 import { OrderTrackingWidget } from './components/orders/OrderTrackingWidget';
+import { LeaderboardWidget } from './components/home/LeaderboardWidget';
 import { OrderModal } from './components/orders/OrderModal';
+import { FaqGuide } from './components/home/FaqGuide';
 import { Game, Category, PublicData } from './types';
 
 // Declare global to access window.STATIC_GAMES
@@ -65,6 +67,7 @@ export function App() {
       <Navbar />
       <OrderTrackingWidget />
       <Hero onSearch={handleSearch} />
+      <LeaderboardWidget />
       
       <section id="games" className="section" style={{ marginTop: '24px' }}>
         {isLoading ? (
@@ -89,6 +92,7 @@ export function App() {
         <OrderModal game={selectedGame} onClose={() => setSelectedGame(null)} />
       )}
 
+      <FaqGuide />
       <Footer />
     </main>
   );

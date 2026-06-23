@@ -330,6 +330,18 @@
         }
       }
     </style>
+    <script>
+      // Global fetch interceptor to handle 401/403 and auto-logout
+      const originalFetch = window.fetch;
+      window.fetch = async function() {
+        const response = await originalFetch.apply(this, arguments);
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem('admin_token');
+          window.location.reload();
+        }
+        return response;
+      };
+    </script>
   </head>
   <body>
     <div id="admin-root"></div>

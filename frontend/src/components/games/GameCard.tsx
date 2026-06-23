@@ -17,17 +17,24 @@ export function GameCard({ game, onSelect }: GameCardProps) {
       style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '16px' }}
     >
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-        <div className="game-thumb" style={{ flexShrink: 0, width: '64px', height: '64px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(247, 234, 225, 0.78) 48%, rgba(242, 228, 246, 0.68))', overflow: 'hidden' }}>
+        <div className="game-thumb" style={{ flexShrink: 0, width: '64px', height: '64px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, var(--accent) 0%, var(--surface-2) 100%)', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.4), 0 2px 8px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
           {game.play_image || game.playImage ? (
             <img src={game.play_image || game.playImage} alt={game.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
           ) : (
-            initial
+            <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '1px', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+              {initial}
+            </span>
           )}
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
             <h3 style={{ margin: 0, fontSize: '18px', color: '#4d4255' }}>{game.name}</h3>
-            {(game.isFeatured || game.is_featured === 1) && <span className="risk-pill low">แนะนำ</span>}
+            <div style={{ display: 'flex', gap: '4px', flexDirection: 'column', alignItems: 'flex-end' }}>
+              {(game.isFeatured || game.is_featured === 1) && <span className="risk-pill low">แนะนำ</span>}
+              {game.banStatus === 'risk' && <span className="risk-pill medium" style={{ fontSize: '11px', padding: '2px 6px' }}>อัตราโดนแบน {game.banRiskPercentage}%</span>}
+              {game.banStatus === 'testing' && <span className="risk-pill low" style={{ fontSize: '11px', padding: '2px 6px', background: 'var(--warning)', color: 'black' }}>ช่วงทดสอบระบบ</span>}
+              {game.banStatus === 'banned' && <span className="risk-pill high" style={{ fontSize: '11px', padding: '2px 6px' }}>งดรับบริการชั่วคราว</span>}
+            </div>
           </div>
           <span className="muted" style={{ display: 'inline-block', marginBottom: '8px', fontSize: '13px' }}>
             {game.category_name || game.categoryName || game.category?.name}

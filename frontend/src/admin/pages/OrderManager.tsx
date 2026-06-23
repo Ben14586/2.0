@@ -6,10 +6,14 @@ export function OrderManager() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('/api/admin/orders');
+      const response = await fetch('/api/admin-orders', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+        }
+      });
       const data = await response.json();
       if (data.success) {
-        setOrders(data.data.orders);
+        setOrders(data.data.orders || data.data || []);
       }
     } catch (err) {
       console.error(err);
@@ -24,11 +28,23 @@ export function OrderManager() {
 
   const handleUpdateStatus = async (orderId: string, status: string) => {
     if (!confirm(`คุณแน่ใจหรือไม่ที่จะเปลี่ยนสถานะเป็น ${status}?`)) return;
+    
+    let adminNote = '';
+    if (status === 'cancelled' || status === 'completed') {
+      const note = window.prompt('ระบุหมายเหตุถึงลูกค้า (เว้นว่างได้ถ้าไม่มี):');
+      if (note !== null) {
+        adminNote = note;
+      }
+    }
+    
     try {
-      const response = await fetch(`/api/admin/orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+      const response = await fetch(`/api/admin-orders`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+        },
+        body: JSON.stringify({ orderId, status, adminNote: adminNote || undefined })
       });
       const data = await response.json();
       if (data.success) {
@@ -59,7 +75,7 @@ export function OrderManager() {
           {orders.map(order => (
             <div key={order.id} className="row" style={{ alignItems: 'center' }}>
               <div>
-                <strong style={{ fontSize: '15px' }}>{order.order_id}</strong>
+                <strong style={{ fontSize: '15px' }}>{order.order_id || order.id}</strong>
                 <div className="muted" style={{ fontSize: '13px', marginTop: '4px' }}>
                   {order.game_name} - {order.package_name}
                 </div>
@@ -71,6 +87,11 @@ export function OrderManager() {
                 <span className={`pill ${order.status === 'completed' ? 'low' : order.status === 'cancelled' ? 'high' : order.status === 'processing' ? 'medium' : ''}`}>
                   {order.status === 'completed' ? 'เสร็จสิ้น' : order.status === 'cancelled' ? 'ยกเลิก' : order.status === 'processing' ? 'กำลังดำเนินการ' : 'รอดำเนินการ'}
                 </span>
+                {order.admin_note && (
+                  <div style={{ fontSize: '12px', marginTop: '4px', color: 'var(--muted)', background: 'var(--surface-2)', padding: '4px 8px', borderRadius: '4px' }}>
+                    📝 {order.admin_note}
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <a href={order.slip_url} target="_blank" rel="noreferrer" style={{ background: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '8px', fontSize: '13px' }}>

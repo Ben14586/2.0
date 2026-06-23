@@ -37,6 +37,8 @@ export interface Game {
   reference_title?: string;
   play_image?: string;
   play_store?: string;
+  banStatus?: string;
+  banRiskPercentage?: number;
   packages: Package[];
 }
 

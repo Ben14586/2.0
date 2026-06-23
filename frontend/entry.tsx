@@ -1,13 +1,16 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { App } from './src/App'
+import { AuthProvider } from './src/context/AuthContext'
 import './tailwind.css'
 
 const rootElement = document.getElementById('react-upgrade-root')
 if (rootElement) {
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </React.StrictMode>
   )
 }

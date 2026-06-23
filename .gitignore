@@ -6,10 +6,10 @@ __pycache__/
 .venv/
 node_modules/
 
-database.db
 *.log
 *.zip
 exports/
-dist/
 netlify-deploy/
 step2-backend-release/
+frontend/node_modules/
+.qodo/

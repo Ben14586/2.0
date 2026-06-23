@@ -78,6 +78,12 @@ export function OrderTrackingWidget() {
             <p style={{ margin: '4px 0' }}><strong>ราคาสุทธิ:</strong> <span className="price-text" style={{ fontWeight: 700, color: '#8d6e63' }}>{result.final_price} บาท</span></p>
             <p style={{ margin: '4px 0', fontSize: '13px', color: '#6d6077' }}><strong>สร้างเมื่อ:</strong> <span>{new Date(result.created_at).toLocaleString('th-TH')}</span></p>
             
+            {result.admin_note && (
+              <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(216, 183, 160, 0.1)', borderLeft: '3px solid #8d6e63', borderRadius: '4px' }}>
+                <p style={{ margin: 0, fontSize: '13px', color: '#4d4255' }}><strong>หมายเหตุจากแอดมิน:</strong><br/>{result.admin_note}</p>
+              </div>
+            )}
+            
             <div style={{ marginTop: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#6d6077', marginBottom: '8px' }}>
                 <span>ได้รับออเดอร์</span>

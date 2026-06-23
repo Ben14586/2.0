@@ -1,0 +1,2 @@
+DEBUG LOGIN: username=admin, password=admin1234, found=True
+DEBUG LOGIN: stored_hash=pbkdf2_sha256$260000$3fc3c19253e7c3cb861c2c4de9d6d2bd$e20fdddb78f89301ba8f7aba36a31cb6ea14013009e25bf85c43561c858fe362, verify=False
