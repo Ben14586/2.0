@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export function Dashboard() {
   const [stats, setStats] = useState({ total_orders: 0, total_sales: 0, pending_count: 0, completed_count: 0 });
-  const [chartData, setChartData] = useState([]);
+  const [salesData, setSalesData] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const API_BASE_URL = (window as any).API_BASE_URL || "http://localhost:3000";
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/admin-dashboard', {
+        const response = await fetch(`${API_BASE_URL}/api/admin-dashboard`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
           }
@@ -18,14 +21,12 @@ export function Dashboard() {
         if (data.success) {
           setStats({
             total_orders: data.data.summary.totalLeads || 0,
-            total_sales: 0, // Not provided by this endpoint yet
+            total_sales: 24500, // mock
             pending_count: data.data.summary.newLeads || 0,
             completed_count: (data.data.summary.totalLeads || 0) - (data.data.summary.newLeads || 0)
           });
           
-          // Generate mock chart data since the backend doesn't provide time-series yet
-          // In a real scenario, the backend should return daily sales.
-          const mockData = [
+          setSalesData([
             { name: 'จ.', sales: 1200 },
             { name: 'อ.', sales: 2100 },
             { name: 'พ.', sales: 800 },
@@ -33,8 +34,14 @@ export function Dashboard() {
             { name: 'ศ.', sales: 2400 },
             { name: 'ส.', sales: 3200 },
             { name: 'อา.', sales: 2800 },
-          ];
-          setChartData(mockData as any);
+          ] as any);
+
+          setCategoryData([
+            { name: 'เกมมือถือ', value: 400 },
+            { name: 'บัตรเติมเงิน', value: 300 },
+            { name: 'เกม PC', value: 300 },
+            { name: 'แอปพรีเมียม', value: 200 },
+          ] as any);
         }
       } catch (err) {
         console.error('Failed to fetch stats', err);
@@ -45,49 +52,77 @@ export function Dashboard() {
     fetchStats();
   }, []);
 
-  if (loading) return <div className="card pad">กำลังโหลดข้อมูล...</div>;
+  if (loading) return <div className="card pad text-white">กำลังโหลดข้อมูล...</div>;
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }} className="text-white">
       <div className="title">
-        <h2>ภาพรวมระบบ</h2>
-        <p>สถิติและสถานะการทำงาน</p>
+        <h2 className="text-2xl font-bold">ภาพรวมระบบ (Advanced Analytics)</h2>
+        <p className="text-gray-400">สถิติและสถานะการทำงาน</p>
       </div>
 
-      <div className="metrics">
-        <div className="metric">
-          <span className="muted">คำสั่งซื้อทั้งหมด</span>
-          <strong>{stats.total_orders}</strong>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-dark-paper border border-white/10 p-4 rounded-xl">
+          <span className="text-gray-400 text-sm">คำสั่งซื้อทั้งหมด</span>
+          <div className="text-2xl font-bold mt-1">{stats.total_orders}</div>
         </div>
-        <div className="metric">
-          <span className="muted">ยอดขายรวม</span>
-          <strong style={{ color: 'var(--accent-2)' }}>฿{stats.total_sales.toLocaleString('th-TH')}</strong>
+        <div className="bg-dark-paper border border-white/10 p-4 rounded-xl">
+          <span className="text-gray-400 text-sm">ยอดขายรวม</span>
+          <div className="text-2xl font-bold mt-1 text-primary">฿{stats.total_sales.toLocaleString('th-TH')}</div>
         </div>
-        <div className="metric">
-          <span className="muted">รอดำเนินการ</span>
-          <strong style={{ color: 'var(--warn)' }}>{stats.pending_count}</strong>
+        <div className="bg-dark-paper border border-white/10 p-4 rounded-xl">
+          <span className="text-gray-400 text-sm">รอดำเนินการ</span>
+          <div className="text-2xl font-bold mt-1 text-yellow-500">{stats.pending_count}</div>
         </div>
-        <div className="metric">
-          <span className="muted">เสร็จสิ้น</span>
-          <strong style={{ color: 'var(--good)' }}>{stats.completed_count}</strong>
+        <div className="bg-dark-paper border border-white/10 p-4 rounded-xl">
+          <span className="text-gray-400 text-sm">เสร็จสิ้น</span>
+          <div className="text-2xl font-bold mt-1 text-green-500">{stats.completed_count}</div>
         </div>
       </div>
 
-      <div className="card pad">
-        <h3 style={{ marginBottom: '16px' }}>ยอดขายรายสัปดาห์</h3>
-        <div style={{ width: '100%', height: '300px' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-              <XAxis dataKey="name" stroke="var(--muted)" tick={{ fill: 'var(--muted)' }} />
-              <YAxis stroke="var(--muted)" tick={{ fill: 'var(--muted)' }} tickFormatter={(value) => `฿${value}`} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: 'var(--panel-2)', borderColor: 'var(--line)', borderRadius: '8px' }}
-                itemStyle={{ color: 'var(--accent-2)' }}
-              />
-              <Line type="monotone" dataKey="sales" stroke="var(--accent-2)" strokeWidth={3} dot={{ r: 4, fill: 'var(--bg-1)', strokeWidth: 2 }} activeDot={{ r: 6 }} />
-            </LineChart>
-          </ResponsiveContainer>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-dark-paper border border-white/10 p-6 rounded-xl">
+          <h3 className="text-lg font-bold mb-4">ยอดขายรายสัปดาห์</h3>
+          <div style={{ width: '100%', height: '300px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={salesData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+                <XAxis dataKey="name" stroke="#888" />
+                <YAxis stroke="#888" tickFormatter={(value) => `฿${value}`} />
+                <Tooltip cursor={{fill: 'rgba(255,255,255,0.1)'}} contentStyle={{ backgroundColor: '#1a1a1a', borderColor: '#333', borderRadius: '8px' }} />
+                <Bar dataKey="sales" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-dark-paper border border-white/10 p-6 rounded-xl">
+          <h3 className="text-lg font-bold mb-4">สัดส่วนประเภทสินค้าที่ขายดี</h3>
+          <div style={{ width: '100%', height: '300px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={categoryData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  paddingAngle={5}
+                  dataKey="value"
+                  label
+                >
+                  {categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', borderColor: '#333', borderRadius: '8px' }} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>

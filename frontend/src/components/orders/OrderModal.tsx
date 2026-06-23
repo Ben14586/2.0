@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Game, Package } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { QrCode, Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface OrderModalProps {
   game: Game;
@@ -147,14 +148,41 @@ ${backupCode ? 'Backup Code: ' + backupCode : ''}
   if (submitSuccess) {
     return (
       <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="glass-card" style={{ padding: '32px', maxWidth: '400px', width: '90%', textAlign: 'center' }}>
-          <CheckCircle size={64} color="#4caf50" style={{ margin: '0 auto 16px' }} />
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0, y: 50 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="glass-card" 
+          style={{ padding: '32px', maxWidth: '400px', width: '90%', textAlign: 'center' }}
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1, rotate: 360 }}
+            transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.2 }}
+          >
+            <CheckCircle size={64} color="#4caf50" style={{ margin: '0 auto 16px' }} />
+          </motion.div>
           <h2 style={{ color: '#4caf50', marginBottom: '16px' }}>สั่งซื้อสำเร็จ!</h2>
           <p>หมายเลขออเดอร์ของคุณคือ:</p>
-          <h1 style={{ fontSize: '32px', margin: '12px 0', background: 'linear-gradient(90deg, #5a4c62, #8f6f94)', WebkitBackgroundClip: 'text', color: 'transparent' }}>{orderId}</h1>
+          <motion.h1 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            style={{ fontSize: '32px', margin: '12px 0', background: 'linear-gradient(90deg, #5a4c62, #8f6f94)', WebkitBackgroundClip: 'text', color: 'transparent' }}
+          >
+            {orderId}
+          </motion.h1>
           <p className="muted" style={{ marginBottom: '24px' }}>คุณจะได้รับการแจ้งเตือนเมื่อการเติมเงินเสร็จสิ้น</p>
-          <button className="primary-action" onClick={onClose} style={{ width: '100%' }}>ปิดหน้าต่าง</button>
-        </div>
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="primary-action" 
+            onClick={onClose} 
+            style={{ width: '100%' }}
+          >
+            ปิดหน้าต่าง
+          </motion.button>
+        </motion.div>
       </div>
     );
   }

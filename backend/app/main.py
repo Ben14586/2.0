@@ -5,10 +5,44 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 from pathlib import Path
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from apscheduler.schedulers.background import BackgroundScheduler
+import sqlite3
+import datetime
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 
+limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 app = FastAPI(title="Game Services API")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+def cleanup_old_data():
+    try:
+        from .database import DATABASE_FILE
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+        # Delete notifications older than 30 days
+        cursor.execute("DELETE FROM notifications WHERE created_at <= datetime('now', '-30 days')")
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("Error in cleanup task:", e)
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(cleanup_old_data, 'cron', hour=0, minute=0) # Run every midnight
+
+@app.on_event("startup")
+def startup_event():
+    scheduler.start()
+
+@app.on_event("shutdown")
+def shutdown_event():
+    scheduler.shutdown()
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,32 +58,20 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
-import time
-from collections import defaultdict
-
-# --- Anti-DDoS Rate Limiting ---
-RATE_LIMIT_CACHE = defaultdict(list)
-RATE_LIMIT = 100 # 100 requests per IP
-RATE_WINDOW = 60 # per 60 seconds
-
+# --- Additional Security Middleware ---
 @app.middleware("http")
-async def rate_limit_middleware(request: Request, call_next):
-    client_ip = request.client.host if request.client else "unknown"
-    now = time.time()
-    
-    # Filter timestamps within the window
-    RATE_LIMIT_CACHE[client_ip] = [ts for ts in RATE_LIMIT_CACHE[client_ip] if now - ts < RATE_WINDOW]
-    
-    if len(RATE_LIMIT_CACHE[client_ip]) >= RATE_LIMIT:
-        return JSONResponse(status_code=429, content={"success": False, "error": "Too many requests. Please try again later."})
-        
-    RATE_LIMIT_CACHE[client_ip].append(now)
-    
+async def security_headers_middleware(request: Request, call_next):
     # Prevent extremely long paths or malicious URI lengths
     if len(str(request.url)) > 2000:
         return JSONResponse(status_code=400, content={"success": False, "error": "URI Too Long"})
 
-    return await call_next(request)
+    response = await call_next(request)
+    
+    # Add Security Headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
 
 from .routers import payment, auth, orders, notifications, games, settings, analytics, upload
 

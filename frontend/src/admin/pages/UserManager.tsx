@@ -11,6 +11,7 @@ export const UserManager: React.FC = () => {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [resetPwUser, setResetPwUser] = useState<any>(null);
   const [banUser, setBanUser] = useState<any>(null);
+  const [deleteUser, setDeleteUser] = useState<any>(null);
 
   const fetchUsers = async () => {
     try {
@@ -85,6 +86,58 @@ export const UserManager: React.FC = () => {
       const data = await res.json();
       if (data.success) {
         setBanUser(null);
+        fetchUsers();
+      } else {
+        alert(data.detail || "เกิดข้อผิดพลาด");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleToggleHide = async (user: any) => {
+    try {
+      const token = localStorage.getItem("admin_token");
+      const res = await fetch(`${API_BASE_URL}/api/admin/users/hide`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          is_hidden: !user.is_hidden,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchUsers();
+      } else {
+        alert(data.detail || "เกิดข้อผิดพลาด");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deleteUser) return;
+    try {
+      const token = localStorage.getItem("admin_token");
+      const res = await fetch(`${API_BASE_URL}/api/admin/users/delete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          user_id: deleteUser.id,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDeleteUser(null);
         fetchUsers();
       } else {
         alert(data.detail || "เกิดข้อผิดพลาด");
@@ -181,10 +234,13 @@ export const UserManager: React.FC = () => {
                 <td className="p-4">฿{u.total_spent?.toLocaleString() || 0}</td>
                 <td className="p-4">
                   {u.is_banned ? (
-                    <span className="text-red-500 font-bold text-xs bg-red-500/10 px-2 py-1 rounded">ถูกระงับ</span>
+                    <span className="text-red-500 font-bold text-xs bg-red-500/10 px-2 py-1 rounded block mb-1 w-max">ถูกระงับ</span>
                   ) : (
-                    <span className="text-green-500 font-bold text-xs bg-green-500/10 px-2 py-1 rounded">ปกติ</span>
+                    <span className="text-green-500 font-bold text-xs bg-green-500/10 px-2 py-1 rounded block mb-1 w-max">ปกติ</span>
                   )}
+                  {u.is_hidden ? (
+                    <span className="text-gray-400 font-bold text-xs bg-gray-500/10 px-2 py-1 rounded block w-max mt-1">ซ่อนจากระบบ</span>
+                  ) : null}
                 </td>
                 <td className="p-4 text-right space-x-2">
                   <button onClick={() => setEditingUser(u)} className="text-xs bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded">
@@ -195,6 +251,12 @@ export const UserManager: React.FC = () => {
                   </button>
                   <button onClick={() => setBanUser({ ...u, is_banned: !u.is_banned, ban_reason: u.ban_reason || "" })} className={`text-xs px-2 py-1 rounded ${u.is_banned ? "bg-green-500/10 hover:bg-green-500/20 text-green-500" : "bg-red-500/10 hover:bg-red-500/20 text-red-500"}`}>
                     {u.is_banned ? "ปลดแบน" : "แบน"}
+                  </button>
+                  <button onClick={() => handleToggleHide(u)} className="text-xs bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 px-2 py-1 rounded">
+                    {u.is_hidden ? "เลิกซ่อน" : "ซ่อน"}
+                  </button>
+                  <button onClick={() => setDeleteUser(u)} className="text-xs bg-red-500/20 hover:bg-red-500/40 text-red-500 px-2 py-1 rounded font-bold">
+                    ลบ
                   </button>
                 </td>
               </tr>
@@ -292,6 +354,22 @@ export const UserManager: React.FC = () => {
                   ยืนยัน
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Modal */}
+      {deleteUser && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-paper border border-red-500/30 rounded-xl p-6 w-full max-w-sm text-center">
+            <h3 className="text-2xl font-bold text-red-500 mb-2">ลบผู้ใช้งานถาวร!</h3>
+            <p className="text-white mb-6">คุณแน่ใจหรือไม่ว่าจะลบ <strong>{deleteUser.username}</strong> ออกจากระบบ? การกระทำนี้ไม่สามารถกู้คืนได้</p>
+            <form onSubmit={handleDeleteUser} className="flex gap-4 justify-center">
+              <button type="button" onClick={() => setDeleteUser(null)} className="px-6 py-2 text-gray-400 bg-white/5 hover:bg-white/10 rounded font-bold">ยกเลิก</button>
+              <button type="submit" className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded">
+                ยืนยันการลบ
+              </button>
             </form>
           </div>
         </div>

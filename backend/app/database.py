@@ -48,18 +48,17 @@ def init_new_tables():
         vip_level TEXT DEFAULT 'Bronze',
         is_banned INTEGER DEFAULT 0,
         ban_reason TEXT,
+        is_hidden INTEGER DEFAULT 0,
+        referrer_id INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     """)
-    # Migration: Add is_banned and ban_reason if they don't exist
-    try:
-        cursor.execute("ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0")
-    except sqlite3.OperationalError:
-        pass # Column already exists
-    try:
-        cursor.execute("ALTER TABLE users ADD COLUMN ban_reason TEXT")
-    except sqlite3.OperationalError:
-        pass # Column already exists
+    # Migration: Add new columns if they don't exist
+    for col, col_type in [("is_banned", "INTEGER DEFAULT 0"), ("ban_reason", "TEXT"), ("is_hidden", "INTEGER DEFAULT 0"), ("referrer_id", "INTEGER")]:
+        try:
+            cursor.execute(f"ALTER TABLE users ADD COLUMN {col} {col_type}")
+        except sqlite3.OperationalError:
+            pass # Column already exists
         
     # Create notifications table
     cursor.execute("""

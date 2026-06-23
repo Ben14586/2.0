@@ -13,6 +13,7 @@ class RegisterRequest(BaseModel):
     password: str
     display_name: str
     tel: Optional[str] = None
+    referral_code: Optional[str] = None
 
 class LoginRequest(BaseModel):
     username: str
@@ -29,9 +30,26 @@ async def register(req: RegisterRequest, db=Depends(get_db)):
         raise HTTPException(status_code=400, detail="Username already exists")
         
     hashed_pw = hash_password(req.password)
+    
+    # Check referral
+    referrer_id = None
+    initial_points = 0
+    if req.referral_code:
+        # Assuming referral code is the username for simplicity
+        cursor.execute("SELECT id FROM users WHERE username = ?", (req.referral_code,))
+        referrer = cursor.fetchone()
+        if referrer:
+            referrer_id = referrer["id"]
+            initial_points = 10 # New user gets 10 points
+            # Add points to referrer (20 points)
+            cursor.execute("UPDATE users SET points = points + 20 WHERE id = ?", (referrer_id,))
+            # Add notification for referrer
+            cursor.execute("INSERT INTO notifications (user_id, message) VALUES (?, ?)", 
+                           (referrer_id, f"คุณได้รับ 20 Points จากการที่เพื่อน ({req.username}) สมัครสมาชิก!"))
+    
     cursor.execute(
-        "INSERT INTO users (username, password_hash, tel, display_name, points, total_spent, vip_level) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (req.username, hashed_pw, req.tel, req.display_name, 0, 0.0, "Bronze")
+        "INSERT INTO users (username, password_hash, tel, display_name, points, total_spent, vip_level, referrer_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (req.username, hashed_pw, req.tel, req.display_name, initial_points, 0.0, "Bronze", referrer_id)
     )
     db.commit()
     user_id = cursor.lastrowid
@@ -43,7 +61,7 @@ async def register(req: RegisterRequest, db=Depends(get_db)):
             "username": req.username,
             "tel": req.tel,
             "display_name": req.display_name,
-            "points": 0,
+            "points": initial_points,
             "total_spent": 0.0,
             "vip_level": "Bronze"
         }
@@ -108,6 +126,7 @@ async def get_leaderboard(db=Depends(get_db)):
     cursor.execute("""
         SELECT username, display_name, points, vip_level 
         FROM users 
+        WHERE is_banned = 0 AND is_hidden = 0
         ORDER BY points DESC 
         LIMIT 10
     """)
@@ -120,7 +139,7 @@ from ..dependencies import verify_admin
 @router.get("/admin/users")
 async def admin_get_users(db=Depends(get_db), is_admin=Depends(verify_admin)):
     cursor = db.cursor()
-    cursor.execute("SELECT id, username, tel, display_name, points, total_spent, vip_level, is_banned, ban_reason, created_at FROM users ORDER BY id DESC")
+    cursor.execute("SELECT id, username, tel, display_name, points, total_spent, vip_level, is_banned, ban_reason, is_hidden, created_at FROM users ORDER BY id DESC")
     users = [dict(r) for r in cursor.fetchall()]
     return {"success": True, "data": users}
 
@@ -170,3 +189,26 @@ async def admin_reset_password(req: AdminResetPasswordRequest, db=Depends(get_db
     cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hashed_pw, req.user_id))
     db.commit()
     return {"success": True, "message": "Password reset successfully"}
+
+class AdminUserHideRequest(BaseModel):
+    user_id: int
+    is_hidden: bool
+
+@router.post("/admin/users/hide")
+async def admin_update_user_hide(req: AdminUserHideRequest, db=Depends(get_db), is_admin=Depends(verify_admin)):
+    cursor = db.cursor()
+    cursor.execute("UPDATE users SET is_hidden = ? WHERE id = ?", (1 if req.is_hidden else 0, req.user_id))
+    db.commit()
+    return {"success": True, "message": "User visibility updated successfully"}
+
+class AdminUserDeleteRequest(BaseModel):
+    user_id: int
+
+@router.post("/admin/users/delete")
+async def admin_delete_user(req: AdminUserDeleteRequest, db=Depends(get_db), is_admin=Depends(verify_admin)):
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM users WHERE id = ?", (req.user_id,))
+    # Optionally delete notifications or other related data
+    cursor.execute("DELETE FROM notifications WHERE user_id = ?", (req.user_id,))
+    db.commit()
+    return {"success": True, "message": "User deleted successfully"}
