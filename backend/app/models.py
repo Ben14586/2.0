@@ -36,9 +36,10 @@ class Category(Base):
 
 class Game(Base):
     __tablename__ = "games"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    category_id = Column(Integer, ForeignKey("categories.id"))
+    id = Column(String, primary_key=True)
+    category_id = Column(String, ForeignKey("categories.id"))
     name = Column(String)
+    slug = Column(String)
     image = Column(String)
     description = Column(String)
     cover_image = Column(String)
@@ -46,18 +47,40 @@ class Game(Base):
     has_bonus = Column(Boolean, default=False)
     ban_status = Column(String, default="Safe")
     ban_risk_percentage = Column(Integer, default=0)
+    supported_android = Column(Boolean, default=True)
+    supported_ios = Column(Boolean, default=True)
+    warranty_days = Column(Integer, default=0)
+    warranty_note = Column(String, default="")
+    is_featured = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    reference_title = Column(String, default="")
+    play_store = Column(String, default="")
+    catalog_type = Column(String, default="default")
+    screenshots = Column(String, default="[]") # JSON string
+    video_url = Column(String, default="")
     
     category = relationship("Category", back_populates="games")
     packages = relationship("Package", back_populates="game")
 
 class Package(Base):
     __tablename__ = "packages"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    game_id = Column(Integer, ForeignKey("games.id"))
+    id = Column(String, primary_key=True)
+    game_id = Column(String, ForeignKey("games.id"))
     name = Column(String)
     price = Column(Float)
     original_price = Column(Float)
     is_bestseller = Column(Boolean, default=False)
+    subtitle = Column(String, default="")
+    description = Column(String, default="")
+    badge = Column(String, default="")
+    is_recommended = Column(Boolean, default=False)
+    highlights = Column(String, default="[]") # JSON string
+    delivery = Column(String, default="Instant")
+    support = Column(String, default="24/7")
+    guarantee = Column(String, default="100% Safe")
+    audience = Column(String, default="")
+    admin_notes = Column(String, default="")
+    is_active = Column(Boolean, default=True)
     points_reward = Column(Integer, default=0)
     
     game = relationship("Game", back_populates="packages")

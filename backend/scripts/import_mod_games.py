@@ -210,9 +210,17 @@ def run_import():
                     risk_pct = 50
                     status = "Warning"
                     
+                import uuid
+                import re
+                
+                game_id = str(uuid.uuid4())
+                game_slug = re.sub(r'[^a-zA-Z0-9-]', '-', game_name.lower())
+                
                 new_game = Game(
+                    id=game_id,
                     category_id=cat_id,
                     name=game_name,
+                    slug=game_slug,
                     image=info["icon"],
                     cover_image=info["icon"].replace("s180", "s1024") if "googleusercontent" in info["icon"] else info["icon"],
                     description=info["description"],
@@ -230,6 +238,7 @@ def run_import():
                 
                 # P1: Specific cheat
                 db.add(Package(
+                    id=str(uuid.uuid4()),
                     game_id=new_game.id,
                     name=f"ฟีเจอร์: {clean_package_name(g['cheats'][0])}",
                     price=base_price,
@@ -242,6 +251,7 @@ def run_import():
                 if len(g["cheats"]) > 1:
                     combo_price = base_price * 1.8
                     db.add(Package(
+                        id=str(uuid.uuid4()),
                         game_id=new_game.id,
                         name=f"ฟูลออปชั่น (FULL OPTION): {' + '.join(g['cheats'])}",
                         price=combo_price,
