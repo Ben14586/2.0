@@ -108,18 +108,40 @@ data = {
 }
 
 def clean_package_name(cheat):
-    return cheat.strip()
+    text = cheat.lower()
+    
+    # Transform Client-side cheats (God mode, GM tool) into 'Boosting/Farming Services'
+    if "god mode" in text or "อมตะ" in text or "auto win" in text or "ชนะทันที" in text:
+        return "บริการ: รับจบด่าน/ปั้มแรงค์แบบสปีดรัน (รับประกันผลงาน)"
+    if "gm tool" in text or "cheat panel" in text or "dev tool" in text:
+        return "แพ็กเกจ: อัดทรัพยากรทุกชนิดแบบจัดเต็ม (ผ่านช่องโหว่ลับ)"
+        
+    # Transform Free Shopping into 'Gacha / Rare item pulling'
+    if "ซื้อฟรี" in text or "free shopping" in text or "bypass" in text or "ช็อปฟรี" in text:
+        return "แพ็กเกจ: ดึงไอเทมพรีเมียม / สุ่มกาชารับของแรร์ติดไอดี"
+        
+    # Transform VIP / Unlocks
+    if "unlock" in text or "ปลดล็อก" in text or "vip" in text:
+        return "แพ็กเกจ: ปลดล็อก VIP / ของสวมใส่ถาวร (ผูกติดไอดี)"
+        
+    # Default for resources
+    if "เสก" in text or "เงิน" in text or "ทอง" in text or "เพชร" in text:
+        return "แพ็กเกจ: เสกทรัพยากรพื้นฐาน (ซื้อซ้ำได้ตลอด)"
+        
+    return f"บริการพิเศษ: {cheat.strip()}"
 
 def determine_price(cheats_text):
     text = " ".join(cheats_text).lower()
-    # ช่วงราคา 60-200 บาท เน้นซื้อง่าย ผูกมัด กำไรไม่หาย (ไม่เวอร์เกินไปจนซื้อรอบเดียวจบ)
-    if "god mode" in text or "อมตะ" in text or "cheat panel" in text or "dev tool" in text or "gm tool" in text or "unlock all" in text:
-        return 199.0 # แพงสุด คุ้มสุด ระดับ GM
+    # ช่วงราคา 60-200 บาท ประเมินตาม 'สิ่งที่ติดไอดีลูกค้า' เป็นหลัก
+    if "unlock" in text or "ปลดล็อก" in text or "vip" in text or "gm tool" in text or "cheat panel" in text or "dev tool" in text:
+        return 199.0 # ได้ของถาวรสุดคุ้ม เช่น VIP, ของครบ, หรือทรัพยากรมหาศาล
     if "ซื้อฟรี" in text or "free shopping" in text or "bypass" in text or "ช็อปฟรี" in text:
-        return 149.0 # สายช็อป ราคาคุ้มค่า ซื้อซ้ำได้หลายไอดี
-    if "เสกเงิน" in text or "ทอง" in text or "gem" in text or "เพชร" in text or "เพิ่มสกุลเงิน" in text or "ทรัพยากร" in text:
-        return 89.0 # ของพื้นฐาน ซื้อง่ายขายคล่องสุดๆ 
-    return 69.0 # ราคาเริ่มต้น ดึงดูดให้คนอยากลอง
+        return 149.0 # ดึงของแรร์หรือกาชาเข้าไอดี
+    if "เสก" in text or "เงิน" in text or "ทอง" in text or "เพชร" in text or "เพิ่มสกุลเงิน" in text or "ทรัพยากร" in text:
+        return 89.0 # ทรัพยากรพื้นฐาน ซื้อซ้ำได้บ่อยๆ
+    
+    # พวก God mode / Auto win แปลงเป็นบริการรับฟาร์ม
+    return 69.0 # บริการรับฟาร์ม / ผ่านด่าน ราคาเริ่มต้นซื้อง่าย
 
 # Function to safely search play store
 def fetch_play_store_info(query):
