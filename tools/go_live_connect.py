@@ -29,7 +29,7 @@ def main() -> int:
         description="Connect a live backend URL, rebuild Netlify package, and verify online readiness."
     )
     parser.add_argument("backend_url", help="Live backend base URL, for example https://game-services-backend.onrender.com")
-    parser.add_argument("--site-url", default="https://store-game-0.netlify.app", help="Public Netlify site URL")
+    parser.add_argument("--site-url", default="https://game-services-hwcy.onrender.com", help="Public Render site URL")
     parser.add_argument("--skip-health", action="store_true", help="Pass through to configure:backend when the backend is sleeping")
     parser.add_argument("--admin", action="store_true", help="Also run admin smoke checks when admin credentials are configured")
     args = parser.parse_args()

@@ -74,10 +74,10 @@ ADMIN_BOOTSTRAP_PASSWORD=<strong-private-password>
 ADMIN_SESSION_HOURS=8
 COOKIE_SECURE=1
 COOKIE_SAMESITE=None
-PUBLIC_SITE_URL=https://store-game-0.netlify.app
-ADMIN_SITE_URL=https://store-game-0.netlify.app
-PUBLIC_API_BASE_URL=https://your-backend-host.example.com
-ALLOWED_ORIGINS=https://store-game-0.netlify.app
+PUBLIC_SITE_URL=https://game-services-hwcy.onrender.com
+ADMIN_SITE_URL=https://game-services-hwcy.onrender.com
+PUBLIC_API_BASE_URL=https://game-services-hwcy.onrender.com
+ALLOWED_ORIGINS=https://game-services-hwcy.onrender.com
 ALLOW_FILE_ORIGIN=0
 ```
 
@@ -113,7 +113,7 @@ This will:
 After `go-live:connect` passes:
 
 1. Upload the refreshed `netlify-deploy-latest.zip` to Netlify.
-2. Open `https://store-game-0.netlify.app`.
+2. Open `https://game-services-hwcy.onrender.com`.
 3. Create one real browser order.
 
 ## Acceptance Criteria

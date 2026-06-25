@@ -2,15 +2,15 @@
 
 ## Snapshot
 
-- [x] backend package exists - backend-deploy-latest.zip (1753570 bytes)
-- [x] netlify package exists - netlify-deploy-latest.zip (1622000 bytes)
+- [x] backend package exists - backend-deploy-latest.zip (24115149 bytes)
+- [x] netlify package exists - netlify-deploy-latest.zip (24706892 bytes)
 - [x] backend package contents
 - [x] netlify package contents
-- [x] netlify game catalog injected - games=16
-- [x] netlify game images included - images=16, games=16
-- [x] backend URL configured - https://two-0-ayb0.onrender.com
-- [x] public site URL configured - https://store-game-0.netlify.app
-- [x] allowed origins configured - https://store-game-0.netlify.app
+- [x] netlify game catalog injected - games=97
+- [x] netlify game images included - images=161, games=97
+- [x] backend URL configured - https://game-services-hwcy.onrender.com
+- [x] public site URL configured - https://game-services-hwcy.onrender.com
+- [x] allowed origins configured - https://game-services-hwcy.onrender.com
 
 ## External Tools
 

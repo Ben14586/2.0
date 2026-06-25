@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ENV_PATH = ROOT / ".env"
-PUBLIC_SITE_DEFAULT = "https://store-game-0.netlify.app"
+PUBLIC_SITE_DEFAULT = "https://game-services-hwcy.onrender.com"
 
 
 def npm_command() -> str:

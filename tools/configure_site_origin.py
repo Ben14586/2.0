@@ -40,7 +40,7 @@ def upsert_env(path: Path, updates: dict[str, str]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Configure public/admin site origins for production CORS.")
-    parser.add_argument("site_url", help="Public Netlify site URL, for example https://store-game-0.netlify.app")
+    parser.add_argument("site_url", help="Public site URL, for example https://game-services-hwcy.onrender.com")
     args = parser.parse_args()
 
     site_url = normalize_origin(args.site_url)

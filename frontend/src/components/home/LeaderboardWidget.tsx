@@ -35,57 +35,70 @@ export function LeaderboardWidget() {
         </h2>
         <span className="muted" style={{ fontSize: '14px' }}>อัปเดตแบบเรียลไทม์</span>
       </div>
-      
-      <div className="glass-card" style={{ padding: '24px', overflow: 'hidden' }}>
+
+      <div className="glass-card" style={{ padding: '24px', overflow: 'hidden', borderRadius: '16px', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%)', border: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ display: 'grid', gap: '12px' }}>
           {leaders.map((user, index) => (
-            <div 
-              key={user.username} 
+            <div
+              key={user.username}
               className="leaderboard-item"
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '16px', 
-                padding: '12px 16px', 
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                padding: '16px',
                 borderRadius: '12px',
-                background: index < 3 ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(243, 229, 171, 0.2))' : 'rgba(255, 255, 255, 0.5)',
-                border: index < 3 ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(141, 110, 99, 0.1)'
+                background: index === 0 ? 'linear-gradient(135deg, rgba(234, 179, 8, 0.15), rgba(202, 138, 4, 0.05))' :
+                            index === 1 ? 'linear-gradient(135deg, rgba(148, 163, 184, 0.15), rgba(100, 116, 139, 0.05))' :
+                            index === 2 ? 'linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(180, 83, 9, 0.05))' :
+                            'rgba(255, 255, 255, 0.02)',
+                border: index === 0 ? '1px solid rgba(234, 179, 8, 0.3)' :
+                        index === 1 ? '1px solid rgba(148, 163, 184, 0.3)' :
+                        index === 2 ? '1px solid rgba(217, 119, 6, 0.3)' :
+                        '1px solid rgba(255, 255, 255, 0.05)'
               }}
             >
-              <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
+              <div style={{
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 borderRadius: '50%',
-                background: index === 0 ? '#d4af37' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : '#f0f0f0',
-                color: index < 3 ? '#fff' : '#666',
-                fontWeight: 'bold'
+                background: index === 0 ? 'linear-gradient(135deg, #fef08a, #eab308)' :
+                            index === 1 ? 'linear-gradient(135deg, #e2e8f0, #94a3b8)' :
+                            index === 2 ? 'linear-gradient(135deg, #fcd34d, #d97706)' :
+                            'rgba(255,255,255,0.1)',
+                color: index < 3 ? '#1e293b' : '#94a3b8',
+                fontWeight: 'bold',
+                boxShadow: index < 3 ? '0 4px 10px rgba(0,0,0,0.2)' : 'none'
               }}>
-                {index < 3 ? <Medal size={16} /> : index + 1}
+                {index < 3 ? <Medal size={20} /> : index + 1}
               </div>
-              
+
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#4d4255' }}>
+                <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: index === 0 ? '#fde047' : 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {user.display_name}
+                  {index === 0 && <Star size={14} color="#fde047" fill="#fde047" />}
                 </div>
-                <div style={{ fontSize: '12px', color: '#888' }}>@{user.username}</div>
+                <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>@{user.username}</div>
               </div>
-              
+
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: '900', color: '#8d6e63', fontSize: '18px' }}>
-                  {user.points.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 'normal' }}>Pts</span>
+                <div style={{ fontWeight: '900', color: index === 0 ? '#fde047' : '#38bdf8', fontSize: '1.25rem', display: 'flex', alignItems: 'baseline', gap: '4px', justifyContent: 'flex-end' }}>
+                  {user.points.toLocaleString()} <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: '#94a3b8' }}>Pts</span>
                 </div>
-                <div style={{ 
+                <div style={{
                   display: 'inline-block',
-                  fontSize: '11px', 
-                  padding: '2px 8px', 
-                  background: 'linear-gradient(135deg, #d4af37, #f3e5ab)', 
-                  borderRadius: '999px', 
-                  color: '#8a6d1c', 
-                  fontWeight: 'bold',
-                  marginTop: '4px'
+                  fontSize: '0.7rem',
+                  padding: '2px 8px',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '4px',
+                  color: '#e2e8f0',
+                  fontWeight: '600',
+                  marginTop: '4px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
                 }}>
                   {user.vip_level}
                 </div>
@@ -94,7 +107,7 @@ export function LeaderboardWidget() {
           ))}
         </div>
       </div>
-      
+
       <style>{`
         .leaderboard-item {
           transition: transform 0.2s ease, box-shadow 0.2s ease;

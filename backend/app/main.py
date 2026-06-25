@@ -93,7 +93,7 @@ import json
 
 @app.get("/runtime-config.js")
 async def get_runtime_config():
-    default_api_base_url = "https://two-0-ayb0.onrender.com"
+    default_api_base_url = "https://game-services-hwcy.onrender.com"
     config = {
         "apiBaseUrl": os.getenv("PUBLIC_API_BASE_URL") or default_api_base_url,
     }
@@ -130,4 +130,3 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"success": False, "error": str(exc)},
     )
-

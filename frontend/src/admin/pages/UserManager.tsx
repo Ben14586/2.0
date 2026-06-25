@@ -6,7 +6,7 @@ export const UserManager: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Modals
   const [editingUser, setEditingUser] = useState<any>(null);
   const [resetPwUser, setResetPwUser] = useState<any>(null);
@@ -187,77 +187,154 @@ export const UserManager: React.FC = () => {
   if (loading) return <div className="text-white p-6">Loading...</div>;
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white">จัดการผู้ใช้งาน (Users)</h2>
+    <div className="admin-container">
+      <style>{`
+        .admin-container {
+          padding: 24px;
+          color: #e2e8f0;
+        }
+        .header-flex {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+        }
+        .search-input {
+          background: rgba(15, 23, 42, 0.6);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 8px;
+          padding: 8px 16px;
+          color: white;
+          width: 250px;
+          outline: none;
+        }
+        .search-input:focus {
+          border-color: #3b82f6;
+        }
+        .table-container {
+          background: rgba(30, 41, 59, 0.7);
+          border: 1px solid rgba(255,255,255,0.05);
+          border-radius: 16px;
+          overflow: hidden;
+          backdrop-filter: blur(10px);
+        }
+        .admin-table {
+          width: 100%;
+          border-collapse: collapse;
+          text-align: left;
+          font-size: 0.875rem;
+        }
+        .admin-table th {
+          background: rgba(255,255,255,0.02);
+          padding: 16px;
+          font-weight: 600;
+          color: #cbd5e1;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .admin-table td {
+          padding: 16px;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .admin-table tbody tr:hover {
+          background: rgba(255,255,255,0.02);
+        }
+        .vip-badge {
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          font-weight: bold;
+          display: inline-block;
+        }
+        .vip-diamond { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .vip-gold { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+        .vip-silver { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+        .vip-bronze { background: rgba(120, 113, 108, 0.2); color: #a8a29e; }
+
+        .action-btn {
+          font-size: 0.75rem;
+          padding: 4px 8px;
+          border-radius: 4px;
+          border: none;
+          cursor: pointer;
+          font-weight: 600;
+          transition: all 0.2s;
+        }
+        .btn-edit { background: rgba(255,255,255,0.1); color: white; }
+        .btn-edit:hover { background: rgba(255,255,255,0.2); }
+        .btn-pw { background: rgba(234, 179, 8, 0.1); color: #eab308; }
+        .btn-pw:hover { background: rgba(234, 179, 8, 0.2); }
+        .btn-ban { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .btn-ban:hover { background: rgba(239, 68, 68, 0.2); }
+        .btn-unban { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+        .btn-unban:hover { background: rgba(34, 197, 94, 0.2); }
+        .btn-hide { background: rgba(100, 116, 139, 0.1); color: #94a3b8; }
+        .btn-hide:hover { background: rgba(100, 116, 139, 0.2); }
+      `}</style>
+
+      <div className="header-flex">
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0, color: 'white' }}>จัดการผู้ใช้งาน (Users)</h2>
         <input
           type="text"
           placeholder="ค้นหา Username, ชื่อ, เบอร์โทร..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-dark-bg border border-white/10 rounded-lg px-4 py-2 text-white w-64 focus:border-primary focus:outline-none"
+          className="search-input"
         />
       </div>
 
-      <div className="bg-dark-paper border border-white/10 rounded-xl overflow-hidden">
-        <table className="w-full text-left text-white text-sm">
-          <thead className="bg-white/5 border-b border-white/10">
+      <div className="table-container">
+        <table className="admin-table">
+          <thead>
             <tr>
-              <th className="p-4">ID</th>
-              <th className="p-4">Username</th>
-              <th className="p-4">ชื่อที่แสดง</th>
-              <th className="p-4">เบอร์โทร</th>
-              <th className="p-4">ระดับ VIP</th>
-              <th className="p-4">Points</th>
-              <th className="p-4">ยอดสะสม</th>
-              <th className="p-4">สถานะ</th>
-              <th className="p-4 text-right">จัดการ</th>
+              <th>ID</th>
+              <th>Username</th>
+              <th>ชื่อที่แสดง</th>
+              <th>เบอร์โทร</th>
+              <th>ระดับ VIP</th>
+              <th>Points</th>
+              <th>ยอดสะสม</th>
+              <th>สถานะ</th>
+              <th style={{ textAlign: 'right' }}>จัดการ</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.map((u) => (
-              <tr key={u.id} className="border-b border-white/5 hover:bg-white/5">
-                <td className="p-4 text-gray-400">#{u.id}</td>
-                <td className="p-4 font-bold">{u.username}</td>
-                <td className="p-4">{u.display_name}</td>
-                <td className="p-4">{u.tel || "-"}</td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded text-xs font-bold ${
-                    u.vip_level === "Diamond" ? "bg-blue-500/20 text-blue-400" :
-                    u.vip_level === "Gold" ? "bg-yellow-500/20 text-yellow-400" :
-                    "bg-gray-500/20 text-gray-400"
+              <tr key={u.id}>
+                <td style={{ color: '#94a3b8' }}>#{u.id}</td>
+                <td style={{ fontWeight: 'bold', color: 'white' }}>{u.username}</td>
+                <td>{u.display_name}</td>
+                <td style={{ color: '#94a3b8' }}>{u.tel || "-"}</td>
+                <td>
+                  <span className={`vip-badge ${
+                    u.vip_level === "Diamond" ? "vip-diamond" :
+                    u.vip_level === "Gold" ? "vip-gold" :
+                    u.vip_level === "Silver" ? "vip-silver" : "vip-bronze"
                   }`}>
-                    {u.vip_level}
+                    {u.vip_level || 'Bronze'}
                   </span>
                 </td>
-                <td className="p-4 text-primary font-bold">{u.points}</td>
-                <td className="p-4">฿{u.total_spent?.toLocaleString() || 0}</td>
-                <td className="p-4">
+                <td style={{ color: '#38bdf8', fontWeight: 'bold' }}>{u.points}</td>
+                <td style={{ color: '#10b981', fontWeight: 'bold' }}>฿{u.total_spent?.toLocaleString() || 0}</td>
+                <td>
                   {u.is_banned ? (
-                    <span className="text-red-500 font-bold text-xs bg-red-500/10 px-2 py-1 rounded block mb-1 w-max">ถูกระงับ</span>
+                    <span style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', padding: '2px 6px', borderRadius: '4px' }}>ถูกระงับ</span>
                   ) : (
-                    <span className="text-green-500 font-bold text-xs bg-green-500/10 px-2 py-1 rounded block mb-1 w-max">ปกติ</span>
+                    <span style={{ color: '#22c55e', fontWeight: 'bold', fontSize: '0.75rem', background: 'rgba(34,197,94,0.1)', padding: '2px 6px', borderRadius: '4px' }}>ปกติ</span>
                   )}
-                  {u.is_hidden ? (
-                    <span className="text-gray-400 font-bold text-xs bg-gray-500/10 px-2 py-1 rounded block w-max mt-1">ซ่อนจากระบบ</span>
-                  ) : null}
+                  {u.is_hidden && (
+                    <span style={{ color: '#94a3b8', fontWeight: 'bold', fontSize: '0.75rem', background: 'rgba(148,163,184,0.1)', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '4px' }}>ซ่อนจากระบบ</span>
+                  )}
                 </td>
-                <td className="p-4 text-right space-x-2">
-                  <button onClick={() => setEditingUser(u)} className="text-xs bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded">
-                    แก้ไข
-                  </button>
-                  <button onClick={() => setResetPwUser({ ...u, new_password: "" })} className="text-xs bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded">
-                    เปลี่ยนรหัส
-                  </button>
-                  <button onClick={() => setBanUser({ ...u, is_banned: !u.is_banned, ban_reason: u.ban_reason || "" })} className={`text-xs px-2 py-1 rounded ${u.is_banned ? "bg-green-500/10 hover:bg-green-500/20 text-green-500" : "bg-red-500/10 hover:bg-red-500/20 text-red-500"}`}>
+                <td style={{ textAlign: 'right', display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                  <button onClick={() => setEditingUser(u)} className="action-btn btn-edit">แก้ไข</button>
+                  <button onClick={() => setResetPwUser({ ...u, new_password: "" })} className="action-btn btn-pw">เปลี่ยนรหัส</button>
+                  <button onClick={() => setBanUser({ ...u, is_banned: !u.is_banned, ban_reason: u.ban_reason || "" })} className={`action-btn ${u.is_banned ? "btn-unban" : "btn-ban"}`}>
                     {u.is_banned ? "ปลดแบน" : "แบน"}
                   </button>
-                  <button onClick={() => handleToggleHide(u)} className="text-xs bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 px-2 py-1 rounded">
+                  <button onClick={() => handleToggleHide(u)} className="action-btn btn-hide">
                     {u.is_hidden ? "เลิกซ่อน" : "ซ่อน"}
                   </button>
-                  <button onClick={() => setDeleteUser(u)} className="text-xs bg-red-500/20 hover:bg-red-500/40 text-red-500 px-2 py-1 rounded font-bold">
-                    ลบ
-                  </button>
+                  <button onClick={() => setDeleteUser(u)} className="action-btn btn-ban">ลบ</button>
                 </td>
               </tr>
             ))}

@@ -16,7 +16,8 @@ export function GameList({ games, categories, searchTerm, onSelectGame }: GameLi
   const filteredGames = useMemo(() => {
     return games.filter(game => {
       const matchesSearch = game.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = activeCategory === 'all' || game.category_id === activeCategory;
+      const gameSlug = (game as any).category?.slug || game.category_slug || '';
+      const matchesCategory = activeCategory === 'all' || gameSlug === activeCategory;
       return matchesSearch && matchesCategory;
     });
   }, [games, searchTerm, activeCategory]);

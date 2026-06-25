@@ -37,9 +37,9 @@ This command packages the backend, exports the Netlify zip, runs QA, runs local 
 6. Set:
    - `DATABASE_FILE=/var/data/database.db`
    - `UPLOADS_DIR=/var/data/uploads`
-   - `PUBLIC_SITE_URL=https://store-game-0.netlify.app`
-   - `ADMIN_SITE_URL=https://store-game-0.netlify.app`
-   - `ALLOWED_ORIGINS=https://store-game-0.netlify.app`
+   - `PUBLIC_SITE_URL=https://game-services-hwcy.onrender.com`
+   - `ADMIN_SITE_URL=https://game-services-hwcy.onrender.com`
+   - `ALLOWED_ORIGINS=https://game-services-hwcy.onrender.com`
    - `COOKIE_SECURE=1`
    - `COOKIE_SAMESITE=None`
 7. Deploy and wait until `/health` returns success.

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import sqlite3
 import zipfile
 from pathlib import Path
 
@@ -16,6 +18,7 @@ INCLUDE_FILES = [
     "railway.json",
     ".env.example",
     "README.md",
+    "config/catalog-seed.json",
     "index.html",
     "admin.html",
     "runtime-config.js",
@@ -46,8 +49,31 @@ def should_include(path: Path) -> bool:
         return False
     return True
 
+def export_catalog_seed() -> None:
+    db_path = ROOT / "database.db"
+    output_path = ROOT / "config" / "catalog-seed.json"
+    if not db_path.exists():
+        return
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        seed = {}
+        for table_name in ("categories", "games", "packages"):
+            seed[table_name] = [
+                dict(row)
+                for row in conn.execute(f"SELECT * FROM {table_name}").fetchall()
+            ]
+    finally:
+        conn.close()
+
+    output_path.write_text(json.dumps(seed, ensure_ascii=False, indent=2), encoding="utf-8")
+
 
 def main() -> None:
+    export_catalog_seed()
+
     if OUTPUT.exists():
         OUTPUT.unlink()
 

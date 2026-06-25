@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Game } from '../../types';
 
 interface GameCardProps {
@@ -6,22 +6,62 @@ interface GameCardProps {
   onSelect: (game: Game) => void;
 }
 
+// Generate a unique gradient from game name
+function getGameGradient(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h1 = Math.abs(hash % 360);
+  const h2 = (h1 + 40 + Math.abs((hash >> 8) % 30)) % 360;
+  return `linear-gradient(135deg, hsl(${h1}, 70%, 55%) 0%, hsl(${h2}, 60%, 40%) 100%)`;
+}
+
+// Check if the URL is a generic unsplash placeholder (not a real game icon)
+function isGenericPlaceholder(url: string | null | undefined): boolean {
+  if (!url) return true;
+  if (url.includes('unsplash.com')) return true;
+  return false;
+}
+
 export function GameCard({ game, onSelect }: GameCardProps) {
-  const isFeatured = game.is_featured === 1;
   const initial = game.name.substring(0, 2).toUpperCase();
+  const imageUrl = game.play_image || game.playImage;
+  const hasRealImage = !isGenericPlaceholder(imageUrl);
+  const [imgError, setImgError] = useState(false);
+  const showPlaceholder = !hasRealImage || imgError;
 
   return (
-    <div 
-      className="glass-card game-card" 
+    <div
+      className="glass-card game-card"
       onClick={() => onSelect(game)}
-      style={{ cursor: 'pointer', transition: 'transform 0.2s', padding: '16px' }}
+      style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', padding: '16px' }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = ''; }}
     >
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-        <div className="game-thumb" style={{ flexShrink: 0, width: '64px', height: '64px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, var(--accent) 0%, var(--surface-2) 100%)', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.4), 0 2px 8px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-          {game.play_image || game.playImage ? (
-            <img src={game.play_image || game.playImage} alt={game.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
+        <div className="game-thumb" style={{
+          flexShrink: 0, width: '64px', height: '64px', borderRadius: '14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: showPlaceholder ? getGameGradient(game.name) : '#f0e6f6',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          overflow: 'hidden',
+          position: 'relative'
+        }}>
+          {!showPlaceholder ? (
+            <img
+              src={imageUrl!}
+              alt={game.name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              loading="lazy"
+              onError={() => setImgError(true)}
+            />
           ) : (
-            <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '1px', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            <span style={{
+              fontSize: '22px', fontWeight: 800, color: 'white',
+              letterSpacing: '1px', textShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              userSelect: 'none'
+            }}>
               {initial}
             </span>
           )}

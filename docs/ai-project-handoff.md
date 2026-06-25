@@ -81,8 +81,7 @@ Game Services is a storefront and admin system for mobile game service packages.
 ## Key Commands
 
 ```powershell
-npm run sync:media
-npm run cache:media
+# Frontend / Python backend
 npm run build
 npm run export:static
 npm run export:excel
@@ -90,12 +89,24 @@ npm run qa
 npm run smoke
 npm run package:backend
 npm run phase3:preflight
-npm run configure:site -- https://store-game-0.netlify.app
+npm run configure:site -- https://game-services-hwcy.onrender.com
 npm run go-live:connect -- https://your-backend-host.example.com
 npm run step2:prepare
 npm run tokens:check
 npm run tokens:setup
 npm run go-live:status
+
+# Backend-node (Node.js/Express)
+cd backend-node && npm test           # 84 tests
+cd backend-node && npm start          # Production server on port 5000
+
+# Python tools (use wrapper since Python 3.13 was removed)
+./python tools/build_frontend.py
+./python tools/qa_check.py
+./python tools/export_static.py
+./python tools/package_backend.py
+./python tools/export_excel.py
+./python tools/cache_game_media.py
 ```
 
 ## Validation Expectations
@@ -119,10 +130,14 @@ Before handing work back:
 - `server.py seed_curated_catalog()` uses `CURATED_GAME_MEDIA` to fill missing `catalog_type`, `reference_title`, `play_image`, and `play_store` on fresh backend deployments.
 - `backend-deploy-latest.zip` should contain `uploads/game-images/` so those seeded local image paths resolve online.
 - Vite may warn that `runtime-config.js` is not bundled because it is a normal script. This is expected and not a failure.
-- `PUBLIC_SITE_URL`, `ADMIN_SITE_URL`, and `ALLOWED_ORIGINS` are configured for `https://store-game-0.netlify.app`.
-- The remaining production blocker is the real backend URL. After deploying backend, run `npm run configure:backend -- <backend-url>`.
+- `PUBLIC_SITE_URL`, `ADMIN_SITE_URL`, and `ALLOWED_ORIGINS` are configured for `https://game-services-hwcy.onrender.com`.
+- Render primary host is `https://game-services-hwcy.onrender.com`; frontend and API should point to the same origin unless a separate backend is intentionally promoted.
 - Preferred after backend hosting: run `npm run go-live:connect -- <backend-url>` because it configures the backend URL, rebuilds `netlify-deploy-latest.zip`, runs QA, runs online smoke, runs Phase 4 dry-run, and refreshes production status.
 - Local environment currently has no usable Netlify/Render/Railway/GitHub CLI session or deploy token, so external backend hosting must be done through a logged-in account/session first.
 - `.env` has local secret values. Never print or paste them into final responses.
 - Step 2 upload material can be regenerated with `npm run step2:prepare`; upload `step2-backend-release/` or `backend-deploy-latest.zip` to Render/Railway.
 - Telegram alerts require `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` on the backend host. Test from admin with `ทดสอบ Telegram`.
+- **Backend-node (Node.js/Express) is production-ready**: 84/84 tests pass, `backend-node-deploy.zip` (5.3MB) includes database.db + 101 game images + Dockerfile + Procfile + render.yaml. Deploy to Render/Railway when ready to replace Python backend.
+- **All 97 active games have local cached images**: `uploads/game-images/` has 101 files. No external image dependencies remain.
+- **Python environment was broken** (Python 3.13 removed). Fixed by downloading portable Python to `python_portable/`. Use `./python` wrapper in bash or `python.bat` in cmd for all tool execution.
+- **Backend-node env.js** now handles missing `.env` gracefully for container deploys. Database auto-initializes on first startup if tables don't exist.

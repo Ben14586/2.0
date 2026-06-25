@@ -38,10 +38,10 @@ export function App() {
         }
 
         if (Array.isArray(data)) {
-          const extractedCategories = Array.from(new Set(data.map((g: Game) => g.category.name))).map(name => ({
-            name: name,
-            slug: data.find((g: Game) => g.category.name === name)?.category.slug || ''
-          }));
+          const extractedCategories = Array.from(new Set(data.map((g: any) => g.category?.name).filter(Boolean))).map((name: any) => {
+            const slug = data.find((g: any) => g.category?.name === name)?.category?.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            return { id: slug, name: name as string, slug, sort_order: 0 };
+          });
           setCategories(extractedCategories);
           setGames(data);
         } else if (data) {

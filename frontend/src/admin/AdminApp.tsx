@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './pages/Dashboard';
-import { OrderManager } from './pages/OrderManager';
+import AdminOrders from '../components/AdminOrders';
 import { CatalogManager } from './pages/CatalogManager';
 import { CouponManager } from './pages/CouponManager';
 import { SettingsManager } from './pages/SettingsManager';
@@ -42,7 +42,7 @@ export function AdminApp() {
         
         <div className="content">
           {activeTab === 'dashboard' && <Dashboard />}
-          {activeTab === 'orders' && <OrderManager />}
+          {activeTab === 'orders' && <AdminOrders />}
           {activeTab === 'users' && <UserManager />}
           {activeTab === 'catalog' && <CatalogManager />}
           {activeTab === 'coupons' && <CouponManager />}

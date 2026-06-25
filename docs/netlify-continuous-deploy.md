@@ -21,10 +21,10 @@ The same values are also stored in `netlify.toml`, so Netlify should auto-fill t
 The frontend build needs the backend URL at build time:
 
 ```text
-PUBLIC_API_BASE_URL=https://two-0-ayb0.onrender.com
-PUBLIC_SITE_URL=https://store-game-0.netlify.app
-ADMIN_SITE_URL=https://store-game-0.netlify.app
-ALLOWED_ORIGINS=https://store-game-0.netlify.app
+PUBLIC_API_BASE_URL=https://game-services-hwcy.onrender.com
+PUBLIC_SITE_URL=https://game-services-hwcy.onrender.com
+ADMIN_SITE_URL=https://game-services-hwcy.onrender.com
+ALLOWED_ORIGINS=https://game-services-hwcy.onrender.com
 ```
 
 These are public routing values, not secrets. They are included in `netlify.toml` for reliable auto deploy.

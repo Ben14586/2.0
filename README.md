@@ -79,9 +79,9 @@ npm run phase4:uat:create
 ค่าหลัก:
 
 ```env
-PUBLIC_SITE_URL=https://store-game-0.netlify.app
-PUBLIC_API_BASE_URL=https://your-backend-host.example.com
-ALLOWED_ORIGINS=https://store-game-0.netlify.app
+PUBLIC_SITE_URL=https://game-services-hwcy.onrender.com
+PUBLIC_API_BASE_URL=https://game-services-hwcy.onrender.com
+ALLOWED_ORIGINS=https://game-services-hwcy.onrender.com
 COOKIE_SECURE=1
 COOKIE_SAMESITE=None
 ```

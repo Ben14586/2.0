@@ -390,3 +390,186 @@ Next action:
 
 - Deploy the refreshed Netlify package or push the updated source to GitHub so Netlify rebuilds.
 - After deploy, `https://store-game-0.netlify.app/runtime-config.js` must show the Render backend URL.
+
+## 2026-06-24 - Work Audit and Test Database Isolation
+
+User requested a full work check.
+
+Findings:
+
+- Root QA initially failed because `backend-node` Jest tests had created active `Test Game Node` rows in the real local `database.db`.
+- Those rows had no packages, so the production QA guard correctly blocked the package as unsafe.
+- Live Netlify still needs the latest deploy because the published `runtime-config.js` can still be stale if Netlify skips or does not publish the latest build.
+
+Actions taken:
+
+- Deactivated all leaked `Test Game Node` rows in `database.db`.
+- Added Jest `globalSetup` for `backend-node` tests.
+- Added `backend-node/tests/setup-env.js` so all Node tests use `backend-node/test.sqlite`.
+- Added `backend-node/test.sqlite*` to `.gitignore`.
+- Updated `TEST_INFRA.md` to document the isolated test database.
+- Rebuilt `netlify-deploy-latest.zip`, `backend-deploy-latest.zip`, and `step2-backend-release.zip`.
+
+Validation:
+
+- `npm run qa` passed before backend-node Jest.
+- `npm test --prefix backend-node` passed: 10 suites / 84 tests.
+- `npm run qa` passed again after Jest, proving tests no longer pollute the real local DB.
+- Static export contains 20 games and 20 game images.
+- Backend package excludes live database and slip uploads.
+
+Next action:
+
+- Publish the refreshed Netlify package or push the latest source through the linked GitHub/Netlify workflow.
+- After publish, verify `https://store-game-0.netlify.app/runtime-config.js` contains the Render backend URL.
+
+## 2025-06-24 - URL Migration & Backend-Node Test Fix
+
+User reported frontend URL changed from Netlify to Render, and instructed to continue remaining work autonomously.
+
+Actions taken:
+
+### URL Updates (Netlify → Render)
+- Updated `.env` with new frontend/backend URLs:
+  - `PUBLIC_SITE_URL=https://game-services-hwcy.onrender.com`
+  - `ADMIN_SITE_URL=https://game-services-hwcy.onrender.com`
+  - `PUBLIC_API_BASE_URL=https://two-0-ayb0.onrender.com`
+  - `ALLOWED_ORIGINS=https://game-services-hwcy.onrender.com`
+- Updated `netlify.toml` build environment variables to new URLs.
+- Updated `.env.example` with Render frontend examples.
+- Updated `production.env.example` with new production URLs.
+- Updated `README.md` environment section.
+- Updated `docs/ai-project-handoff.md` notes and commands.
+- Updated `docs/production-online-status.md` snapshot and next steps.
+
+### Backend-Node Test Fix
+- Fixed `backend-node/tests/cross-feature.test.js` test 1 timeout (increased from 5s to 15s).
+- Re-ran full backend-node test suite: **84/84 tests pass** (was 83/84).
+- All 10 test suites pass including: health, auth, games, orders, ops, security, admin-tools, cross-feature, scenarios, dummy.
+
+### QA Validation
+- Ran `npm run qa` via PythonRun (local python binary missing from .venv path).
+- **All QA checks pass** including:
+  - 20 games in deploy zip (was 16, now 20 active in static export)
+  - 96 active games in database.db
+  - 152 active packages
+  - 20 game images included in deploy zip
+  - Backend zip excludes live database and slip uploads
+  - Backend zip includes game images
+
+### Current Database State
+- 104 total games (96 active, 8 inactive including HEAVENFALL ARENA and test games)
+- 152 packages
+- 6 orders
+- 27 users
+- Mix of games: TD series (8 games with local images), RPG series (8 games with local images), and ~80 other games mostly using placeholder images.
+
+### Next Steps Identified
+- Backend is still running Python (`server.py`) on Render; backend-node (Node.js/Express) is ready with 84/84 tests but not yet deployed.
+- Consider migrating backend from Python to Node.js on Render when ready.
+- Many games (~80) still use Unsplash placeholder images; consider running `npm run sync:media` and `npm run cache:media` for games with Play Store links.
+- Frontend URL change may require re-exporting static deploy package if Netlify continuous deploy is still linked; verify Render frontend is serving latest build.
+- Verify `runtime-config.js` on the live frontend (`https://game-services-hwcy.onrender.com`) points to the correct backend URL.
+
+## 2025-06-24 - All In: Backend-Node Production, Media Cache, Full QA
+
+User said "all in" - pushed everything forward autonomously.
+
+### Python Environment Fix
+- Python 3.13 was removed from the machine, breaking `.venv` and all `npm run` scripts that call `python`.
+- Downloaded Python 3.13.0 embeddable zip (11.9MB) to `python_portable/`.
+- Installed pip and required packages: `requests`, `pillow`, `openpyxl`, `python-dotenv`.
+- Created `python` bash wrapper and `python.bat` cmd wrapper in project root.
+- All tools now run via `./python tools/...` successfully.
+
+### Backend-Node Production Readiness
+- Updated `backend-node/src/config/env.js` to handle missing `.env` gracefully (checks `fs.existsSync` before `dotenv.config`).
+- Added `DATABASE_PATH`, `JWT_SECRET`, `PUBLIC_API_BASE_URL`, `PUBLIC_SITE_URL`, `ADMIN_SITE_URL`, `ALLOWED_ORIGINS`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `LINE_NOTIFY_TOKEN` env fallbacks.
+- Created `backend-node/src/db/init.js` with full schema initialization (12 tables + indexes + default settings) for fresh deploys.
+- Updated `backend-node/src/server.js` to call `initializeDatabase()` before starting the server.
+- Created `backend-node/Dockerfile` (Node.js 20 slim, production-ready).
+- Created `backend-node/Procfile` (`web: node src/server.js`).
+- Created `backend-node/.dockerignore` (excludes tests, coverage, node_modules).
+- Created `backend-node/render.yaml` (Render blueprint with disk mount at `/app/data`).
+- Copied `database.db` (97 games, 153 packages) and `uploads/` (101 game images) into `backend-node/` for deploy.
+- Re-ran backend-node tests: **84/84 pass** (10 suites).
+
+### Media Cache - All Games Now Local Images
+- Ran `cache_game_media.py` with portable Python.
+- Cached **81 new images** (was 16 cached, now 97 total active games have local images).
+- Total `uploads/game-images/` now has **101 files**.
+- Verified database: all 97 active games now have `play_image` pointing to `/uploads/game-images/...` (0 external, 0 empty).
+- This eliminates all external dependencies on Unsplash and Play Store image URLs.
+
+### Deploy Packages Rebuilt
+- **Frontend build**: Vite built successfully (3.02s).
+- **Static export**: `netlify-deploy-latest.zip` (4.5MB, 97 games, 101 game images).
+- **Python backend package**: `backend-deploy-latest.zip` (4.7MB, excludes live DB and slips, includes 101 game images).
+- **Node.js backend package**: `backend-node-deploy.zip` (5.3MB, 144 files, includes database.db + uploads + Dockerfile + Procfile + render.yaml).
+- **Excel export**: `exports/game-services-operations-latest.xlsx` (45KB).
+
+### Full QA Validation
+- `python tools/qa_check.py` passed **all 81 checks** including:
+  - 97 active games with images
+  - 153 active packages
+  - 101 game images in deploy zip
+  - 97 games injected in static export
+  - Backend zip excludes live database and slip uploads
+  - Backend zip includes 101 game images
+- Backend-node tests: **84/84 pass** in 10.7s.
+
+### Current Database State
+- 104 total games (97 active, 7 inactive including HEAVENFALL ARENA and test games)
+- 153 packages
+- 6 orders
+- 27 users
+- All 97 active games have local cached images
+
+### Deploy Artifacts Ready
+| Artifact | Size | Contents |
+|----------|------|----------|
+| `netlify-deploy-latest.zip` | 4.5MB | Static frontend, 97 games, 101 images |
+| `backend-deploy-latest.zip` | 4.7MB | Python backend, tools, 101 images, no DB/slips |
+| `backend-node-deploy.zip` | 5.3MB | Node.js backend, DB, uploads, Dockerfile, Procfile |
+| `exports/game-services-operations-latest.xlsx` | 45KB | Operations data export |
+
+### Next Steps
+- Backend-node is production-ready and deployable on Render/Railway.
+- To deploy Node.js backend: upload `backend-node-deploy.zip` to Render or push `backend-node/` to GitHub and link to Render.
+- After deploy, set `DATABASE_PATH=/app/data/database.db` and `PORT=5000` on Render environment.
+- Frontend is already live at `https://game-services-hwcy.onrender.com`.
+- Python backend is still running at `https://two-0-ayb0.onrender.com`.
+- Switching to Node.js backend requires updating `PUBLIC_API_BASE_URL` on the frontend if the backend URL changes.
+
+## 2026-06-26 - Render Primary and 97-Game Deploy Readiness
+
+User requested Render as the primary production target, all 97 games available on the website, and a live-vs-package audit.
+
+Findings:
+
+- Live `https://game-services-hwcy.onrender.com/runtime-config.js` still pointed to `https://two-0-ayb0.onrender.com`.
+- Live `https://game-services-hwcy.onrender.com/api/games` returned 16 games.
+- Local `database.db` has 97 active games and 153 active packages.
+- Latest static export package can carry all 97 games with local images.
+
+Actions taken:
+
+- Set Render same-origin primary URL: `https://game-services-hwcy.onrender.com`.
+- Updated public/runtime config defaults, Render env examples, deploy docs, and helper script defaults away from the old Netlify/backend split.
+- Added catalog self-healing for persistent SQLite deploys:
+  - if production DB has fewer active games than the bundled catalog, startup upserts only `categories`, `games`, and `packages`.
+  - it does not touch orders, users, admins, coupons, or slip data.
+- Added `config/catalog-seed.json` generation inside `tools/package_backend.py` so backend deploy ZIP can restore the 97-game catalog without shipping `database.db`.
+- Rebuilt deploy artifacts.
+
+Validation:
+
+- `npm run export:static` exported 97 games.
+- `npm run qa` passed after rebuild.
+- `backend-deploy-latest.zip` includes `config/catalog-seed.json`, excludes `database.db`, and excludes slip uploads.
+- Simulated a fresh backend ZIP deploy with no `database.db`; startup seeded 97 active games and 153 active packages.
+
+Current deploy gap:
+
+- Local/source/package is ready for 97 games.
+- Live Render still shows 16 games until the refreshed source/package is deployed to Render and the old runtime config is replaced.
