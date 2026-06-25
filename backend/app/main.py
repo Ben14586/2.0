@@ -15,6 +15,22 @@ import datetime
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 
+def configured_origins() -> list[str]:
+    raw = os.getenv("ALLOWED_ORIGINS", "").strip()
+    origins = [origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip()]
+    for key in ("PUBLIC_SITE_URL", "ADMIN_SITE_URL", "PUBLIC_API_BASE_URL"):
+        value = os.getenv(key, "").strip().rstrip("/")
+        if value and value not in origins:
+            origins.append(value)
+    if os.getenv("ALLOW_LOCAL_ORIGINS", "0") == "1":
+        origins.extend([
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ])
+    return origins or ["https://game-services-hwcy.onrender.com"]
+
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 app = FastAPI(title="Game Services API")
 app.state.limiter = limiter
@@ -46,15 +62,9 @@ def shutdown_event():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173", 
-        "http://127.0.0.1:5173", 
-        "http://localhost:3000", 
-        "http://127.0.0.1:3000",
-        "https://your-production-domain.com"
-    ],
+    allow_origins=configured_origins(),
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_methods=["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
@@ -70,7 +80,8 @@ async def security_headers_middleware(request: Request, call_next):
     # Add Security Headers
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "same-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     return response
 
 from .routers import payment, auth, orders, notifications, games, settings, analytics, upload

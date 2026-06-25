@@ -88,14 +88,25 @@ def init_new_tables():
     from .models import Base
     Base.metadata.create_all(bind=engine)
 
-    # Insert default admin if no admin exists
+    # Insert first admin only when an explicit production password is configured.
+    # Never fall back to a hard-coded password in deployed environments.
     cursor.execute("SELECT COUNT(*) FROM admins")
     if cursor.fetchone()[0] == 0:
         import os
         import hashlib
-        default_admin_pass = os.getenv("ADMIN_PASSWORD", "GameServices@2026!")
-        hashed_pass = hashlib.sha256(default_admin_pass.encode()).hexdigest()
-        cursor.execute("INSERT INTO admins (username, password_hash) VALUES (?, ?)", ("admin", hashed_pass))
+        default_admin_pass = (
+            os.getenv("ADMIN_BOOTSTRAP_PASSWORD", "").strip()
+            or os.getenv("ADMIN_PASSWORD", "").strip()
+        )
+        default_admin_user = os.getenv("ADMIN_USERNAME", "admin").strip() or "admin"
+        if default_admin_pass:
+            hashed_pass = hashlib.sha256(default_admin_pass.encode()).hexdigest()
+            cursor.execute(
+                "INSERT INTO admins (username, password_hash) VALUES (?, ?)",
+                (default_admin_user, hashed_pass),
+            )
+        else:
+            print("No admin created: set ADMIN_BOOTSTRAP_PASSWORD before first deploy.")
         
     conn.commit()
     conn.close()

@@ -116,7 +116,7 @@ for configured_origin in os.getenv("ALLOWED_ORIGINS", "").split(","):
     configured_origin = configured_origin.strip().rstrip("/")
     if configured_origin:
         ALLOWED_ORIGINS.add(configured_origin)
-if os.getenv("ALLOW_FILE_ORIGIN", "1") == "1":
+if os.getenv("ALLOW_FILE_ORIGIN", "0") == "1":
     ALLOWED_ORIGINS.add("null")
 
 BOOTSTRAP_PASSWORD_NOTICE = ""
@@ -686,7 +686,6 @@ def sync_catalog_from_bundled_database(cursor):
         print(f"Catalog sync skipped: {exc}")
 
 def init_db():
-    global BOOTSTRAP_PASSWORD_NOTICE
     conn = get_db()
     cursor = conn.cursor()
 
@@ -828,16 +827,13 @@ def init_db():
     # Seed Default Data
     cursor.execute("SELECT COUNT(*) FROM admins")
     if cursor.fetchone()[0] == 0:
-        bootstrap_password = ADMIN_BOOTSTRAP_PASSWORD or secrets.token_urlsafe(14)
-        if not ADMIN_BOOTSTRAP_PASSWORD:
-            BOOTSTRAP_PASSWORD_NOTICE = (
-                f"Temporary admin password for {ADMIN_USERNAME}: {bootstrap_password} "
-                "(set ADMIN_BOOTSTRAP_PASSWORD before first deploy to control this)"
-            )
-        cursor.execute("""
-        INSERT INTO admins (username, password_hash, token, token_expires_at, last_login_at, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """, (ADMIN_USERNAME, hash_password(bootstrap_password), None, None, None, iso_now()))
+        if ADMIN_BOOTSTRAP_PASSWORD:
+            cursor.execute("""
+            INSERT INTO admins (username, password_hash, token, token_expires_at, last_login_at, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, (ADMIN_USERNAME, hash_password(ADMIN_BOOTSTRAP_PASSWORD), None, None, None, iso_now()))
+        else:
+            print("No admin created: set ADMIN_BOOTSTRAP_PASSWORD before first deploy.")
 
         # Seed categories
         cursor.executemany("""

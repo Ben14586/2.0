@@ -3,7 +3,7 @@ from .database import get_db
 import os
 import hmac
 
-ADMIN_KEY = os.getenv("ADMIN_KEY", "admin_secret_key_123")
+ADMIN_KEY = os.getenv("ADMIN_KEY", "").strip()
 
 def verify_admin(request: Request, db=Depends(get_db)):
     auth_header = request.headers.get("Authorization")
@@ -11,11 +11,11 @@ def verify_admin(request: Request, db=Depends(get_db)):
         raise HTTPException(status_code=401, detail="Unauthorized: No token provided")
     
     token = auth_header.split(" ")[1]
-    
+
     # 1. Check if it matches the master ADMIN_KEY
-    if hmac.compare_digest(token, ADMIN_KEY):
+    if ADMIN_KEY and hmac.compare_digest(token, ADMIN_KEY):
         return True
-        
+
     # 2. Check if it exists in the admins table (for legacy sessions)
     cursor = db.cursor()
     cursor.execute("SELECT id FROM admins WHERE token = ?", (token,))

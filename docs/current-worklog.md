@@ -611,3 +611,44 @@ Validation:
 Expected production result:
 
 - After Render deploys the pushed commit, external monitors using `HEAD /` should recover from 405 to 200.
+
+## 2026-06-26 - Security Hardening and API Readiness Sweep
+
+User requested closing leaks, reducing risk, removing unnecessary deploy debris, checking all APIs, and verifying production readiness.
+
+Findings:
+
+- `production.env.example` contained real-looking notification credentials and a weak admin password example.
+- FastAPI admin fallback accepted a hard-coded `ADMIN_KEY` default.
+- FastAPI database bootstrap had a hard-coded default admin password.
+- FastAPI CORS had fixed localhost/sample origins instead of production environment origins.
+- FastAPI order list and order status update routes were public.
+- FastAPI slip/game image uploads accepted user filenames and did not enforce enough type/size validation.
+- Local debris such as portable Python, backend-node experiments, backup DBs, and slip uploads were not fully ignored.
+
+Actions taken:
+
+- Removed secrets and weak sample credentials from env examples.
+- Disabled `ALLOW_FILE_ORIGIN` and local origins by default.
+- Made FastAPI `ADMIN_KEY` optional and disabled when blank.
+- Removed hard-coded FastAPI admin password fallback; first admin now requires an explicit env password.
+- Made CORS derive from production env values.
+- Locked `/api/orders` list and `/api/orders/{order_id}/status` behind admin auth.
+- Added file size, MIME, and magic-byte validation for slip and game image uploads.
+- Replaced user-provided upload filenames with generated safe filenames.
+- Added `.gitignore` and `.dockerignore` entries for local-only debris and sensitive uploads/backups.
+- Added `tools/security_audit.py` plus `npm run security:audit` and `npm run security:audit:live`.
+
+Validation:
+
+- `python tools/security_audit.py` passed.
+- Local FastAPI `HEAD /` returned 200.
+- Local FastAPI `GET /api/games` returned 97 games.
+- Local FastAPI `GET /api/orders` without auth returned 401.
+- `npm run qa` passed.
+- `npm run security:audit:live` passed on current Render live state.
+
+Follow-up required:
+
+- Rotate the Telegram bot token because a real-looking token had previously been present in `production.env.example`.
+- After Render deploys the hardening commit, re-run `npm run security:audit:live`.

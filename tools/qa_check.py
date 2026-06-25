@@ -38,6 +38,7 @@ MANAGE_TOKENS_PATH = ROOT / "tools" / "manage_tokens.py"
 PHASE3_BUILD_PATH = ROOT / "tools" / "phase3_build.py"
 PHASE4_UAT_PATH = ROOT / "tools" / "phase4_order_uat.py"
 BUILD_FRONTEND_PATH = ROOT / "tools" / "build_frontend.py"
+SECURITY_AUDIT_PATH = ROOT / "tools" / "security_audit.py"
 PRODUCTION_ENV_EXAMPLE_PATH = ROOT / "production.env.example"
 PHASE3_RUNBOOK_PATH = ROOT / "docs" / "phase3-go-live-runbook.md"
 PHASE4_RUNBOOK_PATH = ROOT / "docs" / "phase4-uat-and-hardening.md"
@@ -107,6 +108,7 @@ def check_source_files() -> None:
     record("phase3 build cli exists", PHASE3_BUILD_PATH.exists())
     record("phase4 uat cli exists", PHASE4_UAT_PATH.exists())
     record("frontend build cli exists", BUILD_FRONTEND_PATH.exists())
+    record("security audit cli exists", SECURITY_AUDIT_PATH.exists())
     record("production env example exists", PRODUCTION_ENV_EXAMPLE_PATH.exists())
     record("phase3 runbook exists", PHASE3_RUNBOOK_PATH.exists())
     record("phase4 runbook exists", PHASE4_RUNBOOK_PATH.exists())
@@ -144,6 +146,7 @@ def check_source_files() -> None:
     phase3_build = read_text(PHASE3_BUILD_PATH) if PHASE3_BUILD_PATH.exists() else ""
     phase4_uat = read_text(PHASE4_UAT_PATH) if PHASE4_UAT_PATH.exists() else ""
     build_frontend = read_text(BUILD_FRONTEND_PATH) if BUILD_FRONTEND_PATH.exists() else ""
+    security_audit = read_text(SECURITY_AUDIT_PATH) if SECURITY_AUDIT_PATH.exists() else ""
     production_env = read_text(PRODUCTION_ENV_EXAMPLE_PATH) if PRODUCTION_ENV_EXAMPLE_PATH.exists() else ""
     phase3_runbook = read_text(PHASE3_RUNBOOK_PATH) if PHASE3_RUNBOOK_PATH.exists() else ""
     phase4_runbook = read_text(PHASE4_RUNBOOK_PATH) if PHASE4_RUNBOOK_PATH.exists() else ""
@@ -380,6 +383,16 @@ def check_source_files() -> None:
         "frontend build cli",
         build_frontend,
         ["vite.js", "find_node", "node.exe", "subprocess.run"],
+    )
+    require_tokens(
+        "security audit cli",
+        security_audit,
+        ["SECRET_PATTERNS", "live HEAD / returns 200", "no default FastAPI ADMIN_KEY", "backend zip excludes slips"],
+    )
+    reject_tokens(
+        "production env sample secrets",
+        production_env,
+        ["admin007x", "GameServices@2026!", "admin_secret_key_123"],
     )
     require_tokens(
         "production env template",

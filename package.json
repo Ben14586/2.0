@@ -24,6 +24,8 @@
     "step2:prepare": "python tools/prepare_step2_release.py",
     "tokens:check": "python tools/manage_tokens.py",
     "tokens:setup": "python tools/manage_tokens.py --write-env",
+    "security:audit": "python tools/security_audit.py",
+    "security:audit:live": "python tools/security_audit.py --live-url https://game-services-hwcy.onrender.com",
     "phase3:build": "python tools/phase3_build.py",
     "phase4:uat": "python tools/phase4_order_uat.py",
     "phase4:uat:create": "python tools/phase4_order_uat.py --create"
