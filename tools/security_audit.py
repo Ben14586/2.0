@@ -112,6 +112,13 @@ def check_live(rows: list[tuple[str, bool, str]], base_url: str | None) -> None:
     except Exception as exc:
         record(rows, "live games endpoint works", False, str(exc))
 
+    try:
+        with request.urlopen(base_url + "/api/orders", timeout=20) as response:
+            record(rows, "live orders list requires auth", False, f"unexpected {response.status}")
+    except Exception as exc:
+        status = getattr(getattr(exc, "fp", None), "status", None) or getattr(exc, "code", None)
+        record(rows, "live orders list requires auth", status in {401, 403}, str(status or exc))
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Security and production readiness audit.")
