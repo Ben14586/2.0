@@ -569,7 +569,17 @@ Validation:
 - `backend-deploy-latest.zip` includes `config/catalog-seed.json`, excludes `database.db`, and excludes slip uploads.
 - Simulated a fresh backend ZIP deploy with no `database.db`; startup seeded 97 active games and 153 active packages.
 
-Current deploy gap:
+Deploy result:
 
-- Local/source/package is ready for 97 games.
-- Live Render still shows 16 games until the refreshed source/package is deployed to Render and the old runtime config is replaced.
+- Committed and pushed source update to GitHub `main` at `2b00833`.
+- Render auto-deployed the refreshed source.
+- Live `https://game-services-hwcy.onrender.com/runtime-config.js` now uses `https://game-services-hwcy.onrender.com` and no longer points to the old `two-0-ayb0` backend.
+- Live `https://game-services-hwcy.onrender.com/api/games` now returns 97 games.
+- Live catalog does not include active `HEAVENFALL ARENA`.
+- Source, backend seed, static package, and live Render are aligned:
+  - source active games: 97
+  - source active packages: 153
+  - backend seed active games: 97
+  - backend seed active packages: 153
+  - static ZIP games: 97
+  - live Render games: 97
