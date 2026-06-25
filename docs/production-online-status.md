@@ -14,6 +14,7 @@
 - [x] Render live runtime uses primary Render URL
 - [x] Render live `/api/games` returns 97 games
 - [x] Render live catalog excludes active HEAVENFALL ARENA
+- [x] Local `HEAD /` monitor check returns 200 after the 405 incident fix
 
 ## External Tools
 
@@ -40,3 +41,4 @@
 2. Use Netlify only as a static mirror if needed.
 3. Create one real test order from the Render site and confirm the order ID starts with `ORD-`.
 4. Open admin on Render and verify the order appears, status updates, and tracking can find it.
+5. After the next Render deploy finishes, verify external uptime monitor `HEAD /` is green in Asia.

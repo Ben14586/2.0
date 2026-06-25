@@ -583,3 +583,31 @@ Deploy result:
   - backend seed active packages: 153
   - static ZIP games: 97
   - live Render games: 97
+
+## 2026-06-26 - Render Monitor HEAD Incident Fix
+
+User reported an uptime incident for `https://game-services-hwcy.onrender.com/`.
+
+Findings:
+
+- Render/site monitor was sending `HEAD https://game-services-hwcy.onrender.com/`.
+- The app returned `405 Method Not Allowed` because the FastAPI static frontend route only handled `GET`.
+- The public site and API could still work with `GET`, but uptime monitors that use `HEAD` marked Asia as down.
+
+Actions taken:
+
+- Added `HEAD` support for the FastAPI frontend fallback in `backend/app/main.py`.
+- Added `HEAD` support to the legacy `server.py` static handler path as a defensive fallback.
+- Updated allowed methods to include `HEAD`.
+- Rebuilt `backend-deploy-latest.zip`.
+
+Validation:
+
+- Local `HEAD /` returned 200.
+- Local `HEAD /runtime-config.js` returned 200.
+- Local `GET /api/games` returned 97 games.
+- `npm run qa` passed.
+
+Expected production result:
+
+- After Render deploys the pushed commit, external monitors using `HEAD /` should recover from 405 to 200.

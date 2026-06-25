@@ -116,7 +116,16 @@ if uploads_path.exists():
 
 if dist_path.exists():
     app.mount("/assets", StaticFiles(directory=dist_path / "assets"), name="assets")
-    
+
+    @app.head("/{full_path:path}")
+    async def serve_frontend_head(full_path: str):
+        file_path = dist_path / full_path
+        target = file_path if file_path.is_file() else dist_path / "index.html"
+        headers = {}
+        if target.is_file():
+            headers["Content-Length"] = str(target.stat().st_size)
+        return Response(status_code=200, headers=headers)
+
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
         file_path = dist_path / full_path
