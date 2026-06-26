@@ -724,3 +724,35 @@ Validation:
 - Unsafe active package terms: 0.
 - `npm run build` passed.
 - `npm run package:backend` rebuilt `backend-deploy-latest.zip`.
+
+## 2026-06-26 - Workspace Cleanup and Operations Export
+
+User asked to handle all remaining work one by one.
+
+Actions taken:
+
+- Reviewed uncommitted workspace changes and separated safe production changes from local-only files.
+- Restored risky deploy config drift back to the Python backend path:
+  - `Procfile` remains `web: python server.py`.
+  - `package.json` start command remains `python server.py`.
+  - `railway.json` remains valid JSON without comments.
+- Moved upload-security test files out of public game images into `.codex-trash/2026-06-26-upload-test-files/` instead of deleting them permanently.
+- Added ignore rules for `.codex-trash/`, uploaded `.html` files, and uploaded `.txt` files so test payloads cannot accidentally ship as game media.
+- Kept useful hardening changes:
+  - `.dockerignore` excludes `database.db` and `backups/`.
+  - FastAPI `Order` model now matches string order IDs and current order fields.
+  - `GameCard` resolves relative image URLs through `API_BASE_URL` so cards work from static and backend-served contexts.
+  - `backend/app/utils` contains PromptPay and Telegram helper modules used by the FastAPI router.
+- Exported the latest operations workbook to `exports/game-services-operations-latest.xlsx`.
+- Confirmed the legacy production slip endpoint keeps the current safe fallback:
+  - rate limits repeated uploads
+  - validates real image data
+  - blocks duplicate slip hashes
+  - stores `slip_checks`
+  - returns admin-review status instead of falsely marking unknown slips as paid
+  - full automatic SlipOK verification still requires real `slipok_api_key` and `slipok_branch_id` credentials.
+
+Validation:
+
+- `backend/app/models.py`, `backend/app/utils/notify.py`, and `backend/app/utils/promptpay.py` compile.
+- Excel export created a valid `.xlsx` file with 6 worksheet XML parts.

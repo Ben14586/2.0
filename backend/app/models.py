@@ -87,14 +87,18 @@ class Package(Base):
 
 class Order(Base):
     __tablename__ = "orders"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    game_id = Column(Integer, ForeignKey("games.id"))
-    package_id = Column(Integer, ForeignKey("packages.id"))
-    customer_info = Column(String) # JSON
+    id = Column(String, primary_key=True)
+    game_id = Column(String, ForeignKey("games.id"))
+    package_id = Column(String, ForeignKey("packages.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) # Optional for now
+    game_username = Column(String)
+    game_password = Column(String)
+    login_method = Column(String, default="email") # email, facebook, google, etc.
     price = Column(Float)
-    slip_image = Column(String)
-    status = Column(String, default="pending")
+    slip_image = Column(String, nullable=True)
+    status = Column(String, default="pending") # pending, processing, completed, cancelled
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 class Coupon(Base):
     __tablename__ = "coupons"

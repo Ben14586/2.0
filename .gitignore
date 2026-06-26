@@ -18,6 +18,7 @@ database.db.bak
 backend-node/
 python_portable/
 python/
+python
 python.bat
 .agents/
 .cluster/
@@ -32,3 +33,6 @@ download_game_images.py
 update_images.py
 update_images_missing_local.py
 uploads/slips/
+.codex-trash/
+uploads/game-images/*.html
+uploads/game-images/*.txt

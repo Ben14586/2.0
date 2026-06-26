@@ -28,3 +28,5 @@ tools/sync_sqlite_to_postgres.py
 download_game_images.py
 update_images.py
 update_images_missing_local.py
+database.db
+backups/

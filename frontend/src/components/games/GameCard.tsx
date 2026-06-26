@@ -26,7 +26,14 @@ function isGenericPlaceholder(url: string | null | undefined): boolean {
 
 export function GameCard({ game, onSelect }: GameCardProps) {
   const initial = game.name.substring(0, 2).toUpperCase();
-  const imageUrl = game.play_image || game.playImage;
+  let imageUrl = game.play_image || game.playImage;
+  
+  // Ensure relative URLs are prefixed with API_BASE_URL if available
+  if (imageUrl && imageUrl.startsWith('/')) {
+    const baseUrl = (window as any).API_BASE_URL?.replace(/\/$/, '') || '';
+    imageUrl = `${baseUrl}${imageUrl}`;
+  }
+
   const hasRealImage = !isGenericPlaceholder(imageUrl);
   const [imgError, setImgError] = useState(false);
   const showPlaceholder = !hasRealImage || imgError;
