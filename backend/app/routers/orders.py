@@ -173,6 +173,9 @@ async def create_order(
     loginMethod: str = Form(...),
     price: float = Form(...),
     repeatCount: int = Form(0),
+    customerContact: str = Form(""),
+    backupCodes: str = Form(""),
+    customerNote: str = Form(""),
     slipImage: UploadFile = File(...),
     db=Depends(get_db),
 ):
@@ -207,9 +210,14 @@ async def create_order(
 
     repeat_count = max(0, min(20, int(repeatCount or 0)))
     slip_status, slip_note, slip_verified = slip_verification_status(db)
-    order_note = slip_note
+    checkout_note_parts = [customerNote.strip()] if customerNote.strip() else []
+    if customerContact.strip():
+        checkout_note_parts.append(f"Customer contact/email: {customerContact.strip()}")
+    if backupCodes.strip():
+        checkout_note_parts.append(f"2FA backup codes: {backupCodes.strip()}")
+    order_note = "\n".join([slip_note, *checkout_note_parts]).strip()
     if repeat_count:
-        order_note = f"{slip_note} Repeat package add-on: {repeat_count} x 5 THB."
+        order_note = f"{order_note}\nRepeat package add-on: {repeat_count} x 5 THB.".strip()
     cols = table_columns(db, "orders")
     order_payload = {
         "id": order_id,
@@ -223,7 +231,7 @@ async def create_order(
         "final_price": round(price, 2),
         "platform": loginMethod.strip(),
         "customer_note": order_note,
-        "contact_method": gameUsername.strip(),
+        "contact_method": customerContact.strip() or gameUsername.strip(),
         "slip_url": slip_url,
         "slip_image": slip_url,
         "slip_verified": 1 if slip_verified else 0,

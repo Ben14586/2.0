@@ -768,3 +768,20 @@ Validation:
 - Follow-up: Render runs `python server.py` from Dockerfile, so the legacy server now also owns `/api/payment/qr` with the same manual-transfer fallback.
 - Follow-up: Render build failed because Dockerfile copied ignored `database.db`; Docker image now lets `server.py` create/sync the production database from bundled seed/config instead.
 - Follow-up: Legacy `server.py` payment fallback now uses Unicode escapes for Thai bank/payment text to prevent mojibake on Render/Windows mixed-encoding paths.
+
+# 2026-06-27 - Checkout 2FA and Payment Confirm Fix
+
+- Fixed the checkout submit flow to match the actual Render runtime: Docker runs `python server.py`, which starts the FastAPI app, so order creation must send `multipart/form-data` with `slipImage` to `/api/orders`.
+- Reworked the checkout modal UI copy and data fields:
+  - customer email/game account
+  - password
+  - contact channel
+  - Google/Gmail 2FA backup codes
+  - repeat package add-on
+  - bank transfer fallback and slip upload
+- The Google/Gmail checkout path now explains that backup codes reduce the need for the customer to keep pressing Yes/No during 2FA.
+- FastAPI order creation now accepts `customerContact`, `backupCodes`, and `customerNote` from checkout and stores them in the order note/contact fields for admin review.
+- Verified locally with FastAPI TestClient:
+  - `/api/payment/qr?amount=89` returns success.
+  - `/api/orders` accepts a PNG slip, creates an `ORD-...` order, records slip status, and returns success.
+- Removed the generated UAT order/slip from the local database after verification so test data does not pollute operations.
