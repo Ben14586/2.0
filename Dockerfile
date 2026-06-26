@@ -29,9 +29,6 @@ COPY runtime-config.js ./
 # Copy local uploads folder (for default game images)
 COPY uploads/ ./uploads/
 
-# Copy database (will be overridden by volume in production)
-COPY database.db ./database.db
-
 # Create directories
 RUN mkdir -p /app/uploads/slips
 

@@ -766,3 +766,4 @@ Validation:
 - Added admin settings fields so the transfer bank account can be changed later without code edits.
 - Validation target: run frontend build, QA, security audit, backend package, then push for Render/Netlify sync.
 - Follow-up: Render runs `python server.py` from Dockerfile, so the legacy server now also owns `/api/payment/qr` with the same manual-transfer fallback.
+- Follow-up: Render build failed because Dockerfile copied ignored `database.db`; Docker image now lets `server.py` create/sync the production database from bundled seed/config instead.
