@@ -654,7 +654,7 @@ def sync_catalog_from_bundled_database(cursor):
         target_count = cursor.execute(
             "SELECT COUNT(*) FROM games WHERE is_active = 1"
         ).fetchone()[0]
-        if source_count <= target_count:
+        if source_count < target_count:
             return
 
         for table_name in ("categories", "games", "packages"):

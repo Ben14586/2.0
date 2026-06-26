@@ -688,3 +688,39 @@ Validation:
 - Local `GET /api/orders` with `ADMIN_KEY` auth returned success.
 - Local multipart order creation with a real PNG slip returned 200, generated an `ORD-...` order number, and stored pending slip status.
 - The local test order and slip file were removed after verification.
+
+## 2026-06-26 - Single Safe Package Catalog and Checkout Upgrade
+
+User requested package cards like the reference image, one main package per game, no unsafe/client-only labels, prices in a sensible 60-200 THB range, repeat package add-on at 5 THB each, and a better checkout.
+
+Actions taken:
+
+- Added `tools/normalize_service_packages.py` to normalize active catalog packages safely and repeatably.
+- Normalized active games to exactly one active package per active game.
+- Deactivated duplicate/full-option packages and packages attached to inactive games.
+- Replaced unsafe package language such as Hack, FULL OPTION, God/Cheat/Devtool-style labels with a safe deliverable package:
+  - `Reference Feature Pack`
+  - focus: main resources, repeatable package add-on, verification before service, 7-day warranty.
+- Set active package prices into the 60-200 THB operating range; current active range is 89-180 THB.
+- Updated package card layout to present the single package like a clean service card with price divider and check-list highlights.
+- Updated checkout:
+  - login options now focus on syncable account paths: Google/Gmail, Username/Password, Apple ID/iOS, Android Account.
+  - added repeat package add-on controls at 5 THB each.
+  - payment amount and order submission now include the repeat add-on.
+  - backend stores repeat add-on count in the order note for admin review.
+- Exported the latest normalized data to `config/catalog-seed.json` via backend packaging.
+- Updated catalog sync logic in `server.py` so Render/persistent DB still receives package/content updates when the active game count stays at 97. This prevents the "deploy succeeded but catalog did not change" failure mode.
+- Added QA regression checks:
+  - one active package per active game
+  - active package prices must be 60-200 THB
+  - active packages must not contain unsafe labels in name/subtitle/description/highlights.
+
+Validation:
+
+- Active games: 97.
+- Active packages: 97.
+- Games with more than one active package: 0.
+- Active package price range: 89-180 THB.
+- Unsafe active package terms: 0.
+- `npm run build` passed.
+- `npm run package:backend` rebuilt `backend-deploy-latest.zip`.

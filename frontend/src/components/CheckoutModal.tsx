@@ -26,7 +26,8 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
   // Form State
   const [gameUsername, setGameUsername] = useState('');
   const [gamePassword, setGamePassword] = useState('');
-  const [loginMethod, setLoginMethod] = useState('Facebook');
+  const [loginMethod, setLoginMethod] = useState('Google / Gmail');
+  const [repeatCount, setRepeatCount] = useState(0);
 
   // Payment State
   const [qrString, setQrString] = useState<string | null>(null);
@@ -43,6 +44,8 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const repeatFee = repeatCount * 5;
+  const totalPrice = Math.round(selectedPackage.price) + repeatFee;
 
   useEffect(() => {
     if (step === 2 && !qrString) {
@@ -56,7 +59,7 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
     setPaymentNotice(null);
     try {
       const baseUrl = (window as any).API_BASE_URL?.replace(/\/$/, '') || '';
-      const response = await fetch(`${baseUrl}/api/payment/qr?amount=` + Math.round(selectedPackage.price), { method: 'POST' });
+      const response = await fetch(`${baseUrl}/api/payment/qr?amount=` + totalPrice, { method: 'POST' });
       if (!response.ok) throw new Error('Failed to fetch payment details');
       const data = await response.json();
 
@@ -108,7 +111,8 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
       formData.append('gameUsername', gameUsername);
       formData.append('gamePassword', gamePassword);
       formData.append('loginMethod', loginMethod);
-      formData.append('price', String(Math.round(selectedPackage.price)));
+      formData.append('price', String(totalPrice));
+      formData.append('repeatCount', String(repeatCount));
       if (slipImage) {
         formData.append('slipImage', slipImage);
       }
@@ -170,6 +174,7 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
           <div>
             <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#342d3b' }}>Checkout</h2>
             <p style={{ margin: '4px 0 0', fontSize: '14px', color: '#8f6f94', fontWeight: 500 }}>{game.name} - {selectedPackage.name}</p>
+            <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#675d72' }}>ยอดรวม {totalPrice} บาท {repeatCount > 0 ? `(กดแพ็คซ้ำ ${repeatCount} ครั้ง)` : ''}</p>
           </div>
           <button
             onClick={onClose}
@@ -225,11 +230,10 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
                       onChange={(e) => setLoginMethod(e.target.value)}
                       style={{ width: '100%', background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(141,110,99,0.2)', borderRadius: '12px', padding: '12px 16px', fontSize: '15px', color: '#342d3b', outline: 'none' }}
                     >
-                      <option value="Facebook">Facebook</option>
-                      <option value="Google">Google</option>
-                      <option value="Email">Email</option>
-                      <option value="VK">VK</option>
-                      <option value="X">X (Twitter)</option>
+                      <option value="Google / Gmail">Google / Gmail</option>
+                      <option value="Username / Password">Username / Password</option>
+                      <option value="Apple ID / iOS">Apple ID / iOS</option>
+                      <option value="Android Account">Android Account</option>
                     </select>
                   </div>
 
@@ -254,6 +258,20 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
                       style={{ width: '100%', background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(141,110,99,0.2)', borderRadius: '12px', padding: '12px 16px', fontSize: '15px', color: '#342d3b', outline: 'none' }}
                     />
                   </div>
+
+                  <div style={{ padding: '14px 16px', borderRadius: '16px', background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(141,110,99,0.14)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#4d4255' }}>กดแพ็คซ้ำ</div>
+                        <div style={{ fontSize: '12px', color: '#675d72', marginTop: '3px' }}>เพิ่มครั้งละ 5 บาท สำหรับรายการที่ต้องกดแพ็คเพิ่ม</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button type="button" className="secondary-action" style={{ width: '34px', height: '34px', padding: 0 }} onClick={() => setRepeatCount(Math.max(0, repeatCount - 1))}>-</button>
+                        <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 800, color: '#4d4255' }}>{repeatCount}</span>
+                        <button type="button" className="secondary-action" style={{ width: '34px', height: '34px', padding: 0 }} onClick={() => setRepeatCount(Math.min(20, repeatCount + 1))}>+</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -263,8 +281,9 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
                   <div style={{ textAlign: 'center' }}>
                     <p style={{ margin: '0 0 4px', color: '#675d72', fontSize: '14px' }}>ยอดที่ต้องชำระ</p>
                     <div className="price-text" style={{ fontSize: '36px' }}>
-                      ฿{Math.round(selectedPackage.price)}
+                      ฿{totalPrice}
                     </div>
+                    <p style={{ margin: '6px 0 0', color: '#675d72', fontSize: '13px' }}>แพ็คหลัก {Math.round(selectedPackage.price)} บาท {repeatCount > 0 ? `+ กดแพ็คซ้ำ ${repeatFee} บาท` : ''}</p>
                   </div>
 
                   <div style={{ padding: '24px', background: 'white', borderRadius: '24px', boxShadow: '0 12px 40px rgba(141,110,99,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '240px', minWidth: '240px' }}>

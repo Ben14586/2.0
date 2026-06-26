@@ -140,6 +140,7 @@ async def create_order(
     gamePassword: str = Form(...),
     loginMethod: str = Form(...),
     price: float = Form(...),
+    repeatCount: int = Form(0),
     slipImage: UploadFile = File(...),
     db=Depends(get_db),
 ):
@@ -172,7 +173,11 @@ async def create_order(
     filepath.write_bytes(content)
     slip_url = f"/uploads/slips/{filename}"
 
+    repeat_count = max(0, min(20, int(repeatCount or 0)))
     slip_status, slip_note, slip_verified = slip_verification_status(db)
+    order_note = slip_note
+    if repeat_count:
+        order_note = f"{slip_note} Repeat package add-on: {repeat_count} x 5 THB."
     cols = table_columns(db, "orders")
     order_payload = {
         "id": order_id,
@@ -185,7 +190,7 @@ async def create_order(
         "discount_amount": 0,
         "final_price": round(price, 2),
         "platform": loginMethod.strip(),
-        "customer_note": slip_note,
+        "customer_note": order_note,
         "contact_method": gameUsername.strip(),
         "slip_url": slip_url,
         "slip_image": slip_url,

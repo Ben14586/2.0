@@ -468,6 +468,47 @@ def check_database() -> None:
             """
         ).fetchall()
         record("active games have packages", not rows, ", ".join(row["name"] for row in rows))
+
+        multi_package_games = conn.execute(
+            """
+            SELECT g.name
+            FROM games g
+            JOIN packages p ON p.game_id = g.id AND p.is_active = 1
+            WHERE g.is_active = 1
+            GROUP BY g.id
+            HAVING COUNT(*) != 1
+            """
+        ).fetchall()
+        record("one active package per active game", not multi_package_games, ", ".join(row["name"] for row in multi_package_games))
+
+        price_outliers = conn.execute(
+            """
+            SELECT g.name, p.price
+            FROM packages p
+            JOIN games g ON g.id = p.game_id
+            WHERE g.is_active = 1 AND p.is_active = 1 AND (p.price < 60 OR p.price > 200)
+            """
+        ).fetchall()
+        record("active package prices are 60-200", not price_outliers, ", ".join(f"{row['name']}={row['price']}" for row in price_outliers))
+
+        unsafe_terms = ["hack", "full option", "god", "cheat", "devtool", "กระสุนไม่จำกัด", "อมตะ"]
+        unsafe_packages = conn.execute(
+            """
+            SELECT g.name, p.name AS package_name, p.subtitle, p.description, p.highlights
+            FROM packages p
+            JOIN games g ON g.id = p.game_id
+            WHERE g.is_active = 1 AND p.is_active = 1
+            """
+        ).fetchall()
+        unsafe_rows = [
+            f"{row['name']}: {row['package_name']}"
+            for row in unsafe_packages
+            if any(
+                term in " ".join(str(row[key] or "") for key in row.keys()).lower()
+                for term in unsafe_terms
+            )
+        ]
+        record("active packages avoid unsafe labels", not unsafe_rows, ", ".join(unsafe_rows))
         conn.close()
     except Exception as exc:
         record("database checks", False, str(exc))

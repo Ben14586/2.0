@@ -125,7 +125,7 @@ export function OrderModal({ game, onClose }: OrderModalProps) {
             <span style={{ fontSize: '20px' }}>📦</span> เลือกแพ็กเกจ
           </h3>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: game.packages.length === 1 ? 'minmax(280px, 420px)' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
             {game.packages.map(pkg => {
               const finalPrice = getDiscountedPrice(pkg.price);
               const hasDiscount = finalPrice < Math.round(pkg.price);
@@ -136,13 +136,14 @@ export function OrderModal({ game, onClose }: OrderModalProps) {
                   key={pkg.id}
                   className="glass-card"
                   style={{
-                    padding: '20px',
+                    padding: '22px',
                     border: pkg.is_recommended ? '2px solid #8d6e63' : '1px solid rgba(141,110,99,0.15)',
                     cursor: 'pointer',
                     transition: 'all 0.25s ease',
-                    borderRadius: '16px',
+                    borderRadius: '14px',
                     position: 'relative',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    minHeight: '220px'
                   }}
                   onClick={() => setSelectedPackage(pkg)}
                   onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(141,110,99,0.2)'; }}
@@ -154,16 +155,16 @@ export function OrderModal({ game, onClose }: OrderModalProps) {
                     </div>
                   )}
 
-                  {pkg.badge && <span className="risk-pill" style={{ marginBottom: '10px', display: 'inline-block', fontSize: '12px' }}>{pkg.badge}</span>}
+                  {pkg.badge && <span className="risk-pill" style={{ marginBottom: '14px', display: 'inline-block', fontSize: '12px' }}>{pkg.badge}</span>}
 
-                  <h3 style={{ margin: '0 0 8px', fontSize: '16px', lineHeight: 1.4, color: '#4d4255' }}>{pkg.name}</h3>
+                  <h3 style={{ margin: '0 0 8px', fontSize: '17px', lineHeight: 1.4, color: '#4d4255' }}>{pkg.name}</h3>
 
                   {pkg.subtitle && <p style={{ margin: '0 0 8px', fontSize: '13px', color: '#8d6e63' }}>{pkg.subtitle}</p>}
 
                   {/* Price */}
-                  <div style={{ margin: '12px 0', padding: '10px 0', borderTop: '1px solid rgba(0,0,0,0.06)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ margin: '14px 0', padding: '12px 0', borderTop: '1px solid rgba(0,0,0,0.06)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                     {hasDiscount && <span style={{ textDecoration: 'line-through', color: '#aaa', fontSize: '14px', marginRight: '8px' }}>{Math.round(pkg.price)}฿</span>}
-                    <span style={{ fontSize: '24px', fontWeight: 800, color: hasDiscount ? '#e53935' : '#8d6e63' }}>{finalPrice}</span>
+                    <span style={{ fontSize: '26px', fontWeight: 800, color: hasDiscount ? '#b45309' : '#8d6e63' }}>{finalPrice}</span>
                     <span style={{ fontSize: '14px', color: '#888', marginLeft: '4px' }}>บาท</span>
                   </div>
 
