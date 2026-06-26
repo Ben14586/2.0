@@ -767,3 +767,4 @@ Validation:
 - Validation target: run frontend build, QA, security audit, backend package, then push for Render/Netlify sync.
 - Follow-up: Render runs `python server.py` from Dockerfile, so the legacy server now also owns `/api/payment/qr` with the same manual-transfer fallback.
 - Follow-up: Render build failed because Dockerfile copied ignored `database.db`; Docker image now lets `server.py` create/sync the production database from bundled seed/config instead.
+- Follow-up: Legacy `server.py` payment fallback now uses Unicode escapes for Thai bank/payment text to prevent mojibake on Render/Windows mixed-encoding paths.
