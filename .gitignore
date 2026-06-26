@@ -36,3 +36,19 @@ uploads/slips/
 .codex-trash/
 uploads/game-images/*.html
 uploads/game-images/*.txt
+
+# Local agent/workspace notes
+AGENTS.md
+HEARTBEAT.md
+IDENTITY.md
+PROJECT.md
+SOUL.md
+TEST_INFRA.md
+TEST_READY.md
+TOOLS.md
+USER.md
+
+# One-off local analysis helpers
+tools/analyze_games_categories.py
+tools/check_game_overlaps.py
+tools/check_package_overlaps.py

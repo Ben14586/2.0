@@ -738,6 +738,7 @@ Actions taken:
   - `railway.json` remains valid JSON without comments.
 - Moved upload-security test files out of public game images into `.codex-trash/2026-06-26-upload-test-files/` instead of deleting them permanently.
 - Added ignore rules for `.codex-trash/`, uploaded `.html` files, and uploaded `.txt` files so test payloads cannot accidentally ship as game media.
+- Marked local agent notes and one-off DB comparison helpers as git-ignored because they are workspace memory or hardcoded local diagnostics, not deployable product code.
 - Kept useful hardening changes:
   - `.dockerignore` excludes `database.db` and `backups/`.
   - FastAPI `Order` model now matches string order IDs and current order fields.
