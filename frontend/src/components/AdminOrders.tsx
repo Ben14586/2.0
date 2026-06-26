@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
 
+const API_BASE_URL = ((window as any).API_BASE_URL || '').replace(/\/$/, '');
+
+const getAdminHeaders = () => {
+  const token = localStorage.getItem('admin_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 const EyeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
@@ -236,8 +243,11 @@ export default function AdminOrders() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/orders');
-      if (!res.ok) throw new Error('Failed to fetch orders');
+      const res = await fetch(`${API_BASE_URL}/api/orders`, {
+        headers: getAdminHeaders(),
+      });
+      if (res.status === 401 || res.status === 403) throw new Error('กรุณาเข้าสู่ระบบแอดมินใหม่');
+      if (!res.ok) throw new Error('ไม่สามารถโหลดรายการคำสั่งซื้อได้');
       const data = await res.json();
       setOrders(Array.isArray(data) ? data : data.data || []);
     } catch (err: any) {
@@ -252,18 +262,19 @@ export default function AdminOrders() {
       const formData = new FormData();
       formData.append('status', status);
 
-      const res = await fetch(`/api/orders/${id}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/orders/${id}/status`, {
         method: 'PUT',
+        headers: getAdminHeaders(),
         body: formData,
       });
 
-      if (!res.ok) throw new Error('Failed to update status');
+      if (!res.ok) throw new Error('ไม่สามารถอัปเดตสถานะได้');
 
       setOrders(orders.map(order =>
         order.id === id ? { ...order, status } : order
       ));
     } catch (err: any) {
-      alert('Error updating status: ' + err.message);
+      alert(err.message || 'ไม่สามารถอัปเดตสถานะได้');
     }
   };
 
@@ -299,7 +310,7 @@ export default function AdminOrders() {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Loading orders...</div>
         ) : error ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#f87171' }}>Error: {error}</div>
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#fbbf24', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 16 }}>{error}</div>
         ) : orders.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>No orders found.</div>
         ) : (
@@ -320,15 +331,15 @@ export default function AdminOrders() {
                 <tr key={order.id}>
                   <td>{formatDate(order.created_at || order.order_date)}</td>
                   <td style={{ fontWeight: 600, color: '#f8fafc' }}>
-                    {order.game?.name || order.game_name || 'Unknown Game'}
+                    {order.game?.name || order.game_name || order.gameName || 'Unknown Game'}
                   </td>
                   <td style={{ color: '#cbd5e1' }}>
-                    {order.package?.name || order.package_name || 'Unknown Package'}
+                    {order.package?.name || order.package_name || order.packageName || 'Unknown Package'}
                   </td>
                   <td>
                     <div className="user-info">
                       <div><span className="user-info-label">User:</span> {order.username}</div>
-                      <div><span className="user-info-label">Login:</span> {order.login_method}</div>
+                      <div><span className="user-info-label">Login:</span> {order.login_method || order.loginMethod}</div>
                       <div className="password-wrapper">
                         <span className="user-info-label">Pass:</span>
                         <span className="password-text">
@@ -343,9 +354,9 @@ export default function AdminOrders() {
                     </div>
                   </td>
                   <td>
-                    {(order.slip_url || order.slip) ? (
-                      <a href={order.slip_url || order.slip} target="_blank" rel="noreferrer" className="slip-link">
-                        <img src={order.slip_url || order.slip} alt="Slip" className="slip-img" />
+                    {(order.slip_url || order.slipImage || order.slip) ? (
+                      <a href={order.slip_url || order.slipImage || order.slip} target="_blank" rel="noreferrer" className="slip-link">
+                        <img src={order.slip_url || order.slipImage || order.slip} alt="Slip" className="slip-img" />
                       </a>
                     ) : (
                       <span style={{ color: '#64748b' }}>No slip</span>

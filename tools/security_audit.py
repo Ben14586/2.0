@@ -67,6 +67,7 @@ def check_static(rows: list[tuple[str, bool, str]]) -> None:
     record(rows, "order admin list requires auth", "@router.get(\"/orders\")" in orders and "admin_user=Depends(verify_admin)" in orders)
     record(rows, "order status update requires auth", "@router.put(\"/orders/{order_id}/status\")" in orders and "admin_user=Depends(verify_admin)" in orders)
     record(rows, "slip upload validates type and size", "MAX_SLIP_BYTES" in orders and "ALLOWED_SLIP_TYPES" in orders and "detect_image_type" in orders)
+    record(rows, "payment qr has manual transfer fallback", "manual_transfer" in orders and "PromptPay is not configured" in orders)
 
     upload = read_text("backend/app/routers/upload.py")
     record(rows, "game image upload validates type and size", "MAX_GAME_IMAGE_BYTES" in upload and "ALLOWED_IMAGE_TYPES" in upload and "detect_image_type" in upload)
@@ -118,6 +119,14 @@ def check_live(rows: list[tuple[str, bool, str]], base_url: str | None) -> None:
     except Exception as exc:
         status = getattr(getattr(exc, "fp", None), "status", None) or getattr(exc, "code", None)
         record(rows, "live orders list requires auth", status in {401, 403}, str(status or exc))
+
+    try:
+        req = request.Request(base_url + "/api/payment/qr?amount=150", method="POST")
+        with request.urlopen(req, timeout=20) as response:
+            body = json.loads(response.read().decode("utf-8"))
+            record(rows, "live payment qr endpoint is non-red", response.status == 200 and body.get("success") is True, str(body.get("mode", response.status)))
+    except Exception as exc:
+        record(rows, "live payment qr endpoint is non-red", False, str(exc))
 
 
 def main() -> int:

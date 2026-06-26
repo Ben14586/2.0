@@ -652,3 +652,39 @@ Follow-up required:
 
 - Rotate the Telegram bot token because a real-looking token had previously been present in `production.env.example`.
 - After Render deploys the hardening commit, re-run `npm run security:audit:live`.
+
+## 2026-06-26 - Checkout Transfer, Slip Upload, and Admin Orders Green Path
+
+User reported two red production UI failures:
+
+- Checkout step 2 showed `Failed to fetch payment details` and QR load failure.
+- Admin Portal orders page showed `Error: Failed to fetch orders`.
+
+Root causes:
+
+- FastAPI `/api/payment/qr` returned 503 when `PROMPTPAY_ID` was not configured.
+- Checkout submitted an order without the required `price` field.
+- FastAPI orders router was using SQLAlchemy-style `db.query(...)` against the sqlite3 connection returned by `get_db()`.
+- Admin orders UI called `/api/orders` without the admin Bearer token after the route was correctly hardened.
+
+Actions taken:
+
+- Rebuilt `backend/app/routers/orders.py` around sqlite3 cursor access and the current mixed orders schema.
+- Added safe PromptPay fallback: if no PromptPay ID exists, `/api/payment/qr` now returns 200 with `manual_transfer` mode instead of a red 503.
+- Added order creation with generated order IDs, safe slip filenames, size/type/magic-byte validation, slip check records, and admin-review status.
+- Connected slip-check configuration to existing `slipok_api_key` / `slipok_branch_id` settings and environment variables. If credentials are not configured, the order is still recorded for manual review instead of failing the customer.
+- Updated checkout to send `price`, validate slip image type/size client-side, show the created order number, and continue in manual-transfer mode when QR is unavailable.
+- Updated Admin Orders to call the backend with `Authorization: Bearer <admin_token>`, use `API_BASE_URL`, normalize the current order fields, and display auth/load issues as a non-red operational notice.
+- Added `promptpay_id` to admin settings so QR payment can be enabled without code changes.
+- Extended `tools/security_audit.py` to verify the live payment QR endpoint returns a non-red 200 response.
+
+Validation:
+
+- `python -m py_compile backend/app/routers/orders.py tools/security_audit.py` passed.
+- `npm run build` passed.
+- Local `GET /api/games` returned 97 games.
+- Local `POST /api/payment/qr?amount=150` returned 200.
+- Local `GET /api/orders` without auth returned 401.
+- Local `GET /api/orders` with `ADMIN_KEY` auth returned success.
+- Local multipart order creation with a real PNG slip returned 200, generated an `ORD-...` order number, and stored pending slip status.
+- The local test order and slip file were removed after verification.

@@ -30,6 +30,8 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
 
   // Payment State
   const [qrString, setQrString] = useState<string | null>(null);
+  const [paymentMode, setPaymentMode] = useState<'promptpay' | 'manual_transfer'>('promptpay');
+  const [paymentNotice, setPaymentNotice] = useState<string | null>(null);
   const [isFetchingQr, setIsFetchingQr] = useState(false);
 
   // File State
@@ -39,6 +41,7 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
   // Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,18 +53,26 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
   const fetchQrCode = async () => {
     setIsFetchingQr(true);
     setError(null);
+    setPaymentNotice(null);
     try {
-      const response = await fetch('/api/payment/qr?amount=' + Math.round(selectedPackage.price), { method: 'POST' });
+      const baseUrl = (window as any).API_BASE_URL?.replace(/\/$/, '') || '';
+      const response = await fetch(`${baseUrl}/api/payment/qr?amount=` + Math.round(selectedPackage.price), { method: 'POST' });
       if (!response.ok) throw new Error('Failed to fetch payment details');
       const data = await response.json();
 
       if (typeof data === 'string') {
+        setPaymentMode('promptpay');
         setQrString(data);
       } else {
-        setQrString(data.qrString || data.payload || data.qrCode || data.qr || JSON.stringify(data));
+        const payload = data.qrString || data.payload || data.qrCode || data.qr || '';
+        setPaymentMode(data.mode === 'manual_transfer' || !payload ? 'manual_transfer' : 'promptpay');
+        setQrString(payload || null);
+        setPaymentNotice(data.message || null);
       }
     } catch (err: any) {
-      setError(err.message || 'Error loading QR Code');
+      setPaymentMode('manual_transfer');
+      setQrString(null);
+      setPaymentNotice('ไม่สามารถโหลด QR ได้ในตอนนี้ กรุณาโอนยอดตามจำนวนและแนบสลิปเพื่อให้แอดมินตรวจสอบ');
     } finally {
       setIsFetchingQr(false);
     }
@@ -70,6 +81,18 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('รองรับเฉพาะไฟล์สลิป PNG, JPG หรือ WEBP');
+        e.target.value = '';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError('ไฟล์สลิปต้องไม่เกิน 5MB');
+        e.target.value = '';
+        return;
+      }
+      setError(null);
       setSlipImage(file);
       setPreviewUrl(URL.createObjectURL(file));
     }
@@ -85,19 +108,24 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
       formData.append('gameUsername', gameUsername);
       formData.append('gamePassword', gamePassword);
       formData.append('loginMethod', loginMethod);
+      formData.append('price', String(Math.round(selectedPackage.price)));
       if (slipImage) {
         formData.append('slipImage', slipImage);
       }
 
-      const response = await fetch('/api/orders', {
+      const baseUrl = (window as any).API_BASE_URL?.replace(/\/$/, '') || '';
+      const response = await fetch(`${baseUrl}/api/orders`, {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit order. Please try again.');
+        const text = await response.text();
+        throw new Error(text || 'Failed to submit order. Please try again.');
       }
 
+      const data = await response.json();
+      setOrderId(data.orderId || data.data?.id || null);
       setIsSuccess(true);
     } catch (err: any) {
       setError(err.message || 'Error submitting order');
@@ -158,7 +186,7 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
           {!isSuccess && renderStepIndicators()}
 
           {error && (
-            <div style={{ marginBottom: '20px', padding: '12px 16px', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ marginBottom: '20px', padding: '12px 16px', background: 'rgba(245,158,11,0.1)', borderRadius: '12px', border: '1px solid rgba(245,158,11,0.2)', color: '#7c5b35', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>⚠️</span> {error}
             </div>
           )}
@@ -169,6 +197,11 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
                 ✓
               </div>
               <h3 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: 700, color: '#342d3b' }}>สั่งซื้อสำเร็จ!</h3>
+              {orderId && (
+                <div style={{ margin: '0 0 16px', padding: '10px 14px', borderRadius: '12px', background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.28)', color: '#166534', fontSize: '14px', fontWeight: 700 }}>
+                  เลขออเดอร์: {orderId}
+                </div>
+              )}
               <p style={{ margin: '0 0 32px', color: '#675d72', maxWidth: '280px', lineHeight: 1.5 }}>
                 ระบบได้รับคำสั่งซื้อของคุณแล้ว เรากำลังดำเนินการเติมเงินให้คุณ
               </p>
@@ -237,16 +270,24 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
                   <div style={{ padding: '24px', background: 'white', borderRadius: '24px', boxShadow: '0 12px 40px rgba(141,110,99,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '240px', minWidth: '240px' }}>
                     {isFetchingQr ? (
                       <div style={{ color: '#8f6f94', fontSize: '14px', fontWeight: 500 }}>กำลังโหลด QR Code...</div>
-                    ) : qrString ? (
+                    ) : qrString && paymentMode === 'promptpay' ? (
                       <QRCodeSVG value={qrString} size={192} level="H" />
                     ) : (
-                      <div style={{ color: '#ef4444', fontSize: '14px' }}>โหลด QR Code ไม่สำเร็จ</div>
+                      <div style={{ color: '#6b4f5f', fontSize: '14px', textAlign: 'center', lineHeight: 1.6, maxWidth: '190px' }}>
+                        <strong>โอนยอดตามจำนวน</strong><br />
+                        แล้วแนบสลิปในขั้นถัดไป
+                      </div>
                     )}
                   </div>
 
                   <div style={{ color: '#675d72', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.6)', padding: '8px 16px', borderRadius: '20px' }}>
-                    <span>📱</span> สแกนด้วยแอปธนาคารใดก็ได้
+                    <span>📱</span> {paymentMode === 'promptpay' ? 'สแกนด้วยแอปธนาคารใดก็ได้' : 'โอนให้ตรงยอด แล้วอัปโหลดสลิปเพื่อยืนยัน'}
                   </div>
+                  {paymentNotice && (
+                    <div style={{ color: '#7c5b35', fontSize: '13px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.22)', padding: '10px 14px', borderRadius: '14px', textAlign: 'center', lineHeight: 1.5 }}>
+                      {paymentNotice}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -261,7 +302,7 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
                   <label style={{ display: 'block', width: '100%', cursor: 'pointer' }}>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg,image/webp"
                       onChange={handleFileChange}
                       style={{ display: 'none' }}
                     />

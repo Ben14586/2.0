@@ -6,6 +6,7 @@ export const SettingsManager: React.FC = () => {
   const [settings, setSettings] = useState({
     slipok_api_key: "",
     slipok_branch_id: "",
+    promptpay_id: "",
     telegram_bot_token: "",
     telegram_chat_id: "",
   });
@@ -167,6 +168,24 @@ export const SettingsManager: React.FC = () => {
                 placeholder="รหัสสาขา (ถ้ามี)"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Payment Settings */}
+        <div className="bg-dark-paper rounded-xl p-6 border border-white/10">
+          <h3 className="text-xl font-bold text-primary mb-4">PromptPay Payment</h3>
+          <p className="text-sm text-gray-400 mb-4">ตั้งค่าเลขพร้อมเพย์สำหรับสร้าง QR โอนเงิน หากเว้นว่าง ระบบจะให้ลูกค้าโอนยอดและแนบสลิปแทน</p>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">PromptPay ID</label>
+            <input
+              type="text"
+              name="promptpay_id"
+              value={settings.promptpay_id}
+              onChange={handleChange}
+              className="w-full bg-dark-bg border border-white/10 rounded-lg px-4 py-2 text-white focus:border-primary focus:outline-none"
+              placeholder="เบอร์พร้อมเพย์ 10 หลัก หรือเลขประจำตัวผู้เสียภาษี"
+            />
           </div>
         </div>
       </div>
