@@ -104,6 +104,12 @@ PUBLIC_API_BASE_URL = os.getenv("PUBLIC_API_BASE_URL", "").strip().rstrip("/")
 PUBLIC_SITE_URL = os.getenv("PUBLIC_SITE_URL", "").strip().rstrip("/")
 ADMIN_SITE_URL = os.getenv("ADMIN_SITE_URL", "").strip().rstrip("/")
 ADMIN_ENTRY_URL = (ADMIN_SITE_URL or PUBLIC_SITE_URL).strip().rstrip("/")
+DEFAULT_BANK_TRANSFER = {
+    "bankName": "ธนาคารกสิกรไทย",
+    "accountNumber": "1341058186",
+    "accountName": "ชัยแสงเพชร ธนวุฒิกีรติพร",
+    "note": "บัญชีแทน",
+}
 
 ALLOWED_ORIGINS = {
     f"http://localhost:{PORT}",
@@ -120,6 +126,14 @@ if os.getenv("ALLOW_FILE_ORIGIN", "0") == "1":
     ALLOWED_ORIGINS.add("null")
 
 BOOTSTRAP_PASSWORD_NOTICE = ""
+
+def get_bank_transfer_info():
+    return {
+        "bankName": os.getenv("BANK_TRANSFER_BANK_NAME", "").strip() or DEFAULT_BANK_TRANSFER["bankName"],
+        "accountNumber": os.getenv("BANK_TRANSFER_ACCOUNT_NUMBER", "").strip() or DEFAULT_BANK_TRANSFER["accountNumber"],
+        "accountName": os.getenv("BANK_TRANSFER_ACCOUNT_NAME", "").strip() or DEFAULT_BANK_TRANSFER["accountName"],
+        "note": os.getenv("BANK_TRANSFER_ACCOUNT_NOTE", "").strip() or DEFAULT_BANK_TRANSFER["note"],
+    }
 
 # --- Database helpers ---
 
@@ -2361,7 +2375,9 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        path = urlparse(self.path).path
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
+        query = parse_qs(parsed_url.query)
         try:
             content_length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
@@ -2377,6 +2393,43 @@ class Handler(SimpleHTTPRequestHandler):
             body = json.loads(raw_body)
         except json.JSONDecodeError:
             return self._send_json(400, {"success": False, "error": "Invalid JSON"})
+
+        # Public API: Payment QR / Manual Bank Transfer fallback
+        if path == "/api/payment/qr":
+            amount = to_float(query.get("amount", [body.get("amount", 0)])[0])
+            if amount <= 0:
+                return self._send_json(400, {"success": False, "error": "Invalid payment amount"})
+
+            promptpay_id = os.getenv("PROMPTPAY_ID", "").strip() or os.getenv("PROMPTPAY_PHONE", "").strip()
+            if not promptpay_id:
+                return self._send_json(200, {
+                    "success": True,
+                    "mode": "manual_transfer",
+                    "amount": round(amount, 2),
+                    "payload": "",
+                    "message": "ยังไม่ได้ตั้งค่า PromptPay ระบบจะแสดงบัญชีธนาคารสำหรับโอนยอดตรงและอัปโหลดสลิปแทน",
+                    "bankTransfer": get_bank_transfer_info(),
+                })
+
+            try:
+                from backend.app.utils.promptpay import generate_payload
+                payload = generate_payload(promptpay_id, amount)
+            except Exception:
+                return self._send_json(200, {
+                    "success": True,
+                    "mode": "manual_transfer",
+                    "amount": round(amount, 2),
+                    "payload": "",
+                    "message": "สร้าง PromptPay QR ไม่สำเร็จ ระบบจะแสดงบัญชีธนาคารสำหรับโอนยอดตรงและอัปโหลดสลิปแทน",
+                    "bankTransfer": get_bank_transfer_info(),
+                })
+
+            return self._send_json(200, {
+                "success": True,
+                "mode": "promptpay",
+                "amount": round(amount, 2),
+                "payload": payload,
+            })
 
         # Public API: Order Placement (Does not require login)
         if path == "/api/orders":

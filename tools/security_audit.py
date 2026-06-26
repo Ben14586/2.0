@@ -64,6 +64,7 @@ def check_static(rows: list[tuple[str, bool, str]]) -> None:
     record(rows, "FastAPI supports HEAD monitor", "@app.head" in main)
 
     orders = read_text("backend/app/routers/orders.py")
+    legacy_server = read_text("server.py")
     record(rows, "order admin list requires auth", "@router.get(\"/orders\")" in orders and "admin_user=Depends(verify_admin)" in orders)
     record(rows, "order status update requires auth", "@router.put(\"/orders/{order_id}/status\")" in orders and "admin_user=Depends(verify_admin)" in orders)
     record(rows, "slip upload validates type and size", "MAX_SLIP_BYTES" in orders and "ALLOWED_SLIP_TYPES" in orders and "detect_image_type" in orders)
@@ -71,6 +72,14 @@ def check_static(rows: list[tuple[str, bool, str]]) -> None:
         rows,
         "payment qr has manual transfer fallback",
         "manual_transfer" in orders and "bankTransfer" in orders and "get_bank_transfer_info" in orders,
+    )
+    record(
+        rows,
+        "legacy server payment qr fallback",
+        'path == "/api/payment/qr"' in legacy_server
+        and "manual_transfer" in legacy_server
+        and "bankTransfer" in legacy_server
+        and "get_bank_transfer_info" in legacy_server,
     )
 
     upload = read_text("backend/app/routers/upload.py")
