@@ -18,6 +18,12 @@ ALLOWED_SLIP_TYPES = {
     "image/webp": "webp",
 }
 VALID_ORDER_STATUSES = {"pending", "processing", "completed", "cancelled"}
+DEFAULT_BANK_TRANSFER = {
+    "bankName": "ธนาคารกสิกรไทย",
+    "accountNumber": "1341058186",
+    "accountName": "ชัยแสงเพชร ธนวุฒิกีรติพร",
+    "note": "บัญชีแทน",
+}
 
 
 def now_text() -> str:
@@ -34,6 +40,31 @@ def get_setting(db, key: str, default: str = "") -> str:
         return (row["value"] if row else default) or default
     except Exception:
         return default
+
+
+def get_bank_transfer_info(db) -> dict:
+    return {
+        "bankName": (
+            os.getenv("BANK_TRANSFER_BANK_NAME", "").strip()
+            or get_setting(db, "bank_transfer_bank_name").strip()
+            or DEFAULT_BANK_TRANSFER["bankName"]
+        ),
+        "accountNumber": (
+            os.getenv("BANK_TRANSFER_ACCOUNT_NUMBER", "").strip()
+            or get_setting(db, "bank_transfer_account_number").strip()
+            or DEFAULT_BANK_TRANSFER["accountNumber"]
+        ),
+        "accountName": (
+            os.getenv("BANK_TRANSFER_ACCOUNT_NAME", "").strip()
+            or get_setting(db, "bank_transfer_account_name").strip()
+            or DEFAULT_BANK_TRANSFER["accountName"]
+        ),
+        "note": (
+            os.getenv("BANK_TRANSFER_ACCOUNT_NOTE", "").strip()
+            or get_setting(db, "bank_transfer_account_note").strip()
+            or DEFAULT_BANK_TRANSFER["note"]
+        ),
+    }
 
 
 def detect_image_type(content: bytes) -> str:
@@ -123,7 +154,8 @@ async def generate_qr(amount: float, db=Depends(get_db)):
             "mode": "manual_transfer",
             "amount": round(amount, 2),
             "payload": "",
-            "message": "PromptPay is not configured. Customer can transfer the exact amount and upload the slip.",
+            "message": "ยังไม่ได้ตั้งค่า PromptPay ระบบจะแสดงบัญชีธนาคารสำหรับโอนยอดตรงและอัปโหลดสลิปแทน",
+            "bankTransfer": get_bank_transfer_info(db),
         }
 
     from ..utils.promptpay import generate_payload

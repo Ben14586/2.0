@@ -757,3 +757,11 @@ Validation:
 
 - `backend/app/models.py`, `backend/app/utils/notify.py`, and `backend/app/utils/promptpay.py` compile.
 - Excel export created a valid `.xlsx` file with 6 worksheet XML parts.
+# 2026-06-27 - Checkout Manual Transfer Hardening
+
+- Added production bank-transfer fallback details for checkout when PromptPay QR is not configured.
+- Bank transfer fallback now exposes bank name, account number, account name, and note from backend settings/env with safe defaults.
+- Checkout step 2 now shows a clear bank-transfer panel, exact amount instruction, and copy-account button.
+- Normalized the old English PromptPay fallback notice into Thai customer-facing text.
+- Added admin settings fields so the transfer bank account can be changed later without code edits.
+- Validation target: run frontend build, QA, security audit, backend package, then push for Render/Netlify sync.

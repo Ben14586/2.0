@@ -7,6 +7,10 @@ export const SettingsManager: React.FC = () => {
     slipok_api_key: "",
     slipok_branch_id: "",
     promptpay_id: "",
+    bank_transfer_bank_name: "ธนาคารกสิกรไทย",
+    bank_transfer_account_number: "1341058186",
+    bank_transfer_account_name: "ชัยแสงเพชร ธนวุฒิกีรติพร",
+    bank_transfer_account_note: "บัญชีแทน",
     telegram_bot_token: "",
     telegram_chat_id: "",
   });
@@ -186,6 +190,59 @@ export const SettingsManager: React.FC = () => {
               className="w-full bg-dark-bg border border-white/10 rounded-lg px-4 py-2 text-white focus:border-primary focus:outline-none"
               placeholder="เบอร์พร้อมเพย์ 10 หลัก หรือเลขประจำตัวผู้เสียภาษี"
             />
+          </div>
+        </div>
+
+        {/* Bank Transfer Settings */}
+        <div className="bg-dark-paper rounded-xl p-6 border border-white/10">
+          <h3 className="text-xl font-bold text-accent mb-4">บัญชีโอนเงินสำรอง</h3>
+          <p className="text-sm text-gray-400 mb-4">ใช้แสดงในหน้า Checkout เมื่อยังไม่ได้ตั้ง PromptPay หรือ QR ไม่พร้อมใช้งาน</p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">ธนาคาร</label>
+              <input
+                type="text"
+                name="bank_transfer_bank_name"
+                value={settings.bank_transfer_bank_name}
+                onChange={handleChange}
+                className="w-full bg-dark-bg border border-white/10 rounded-lg px-4 py-2 text-white focus:border-primary focus:outline-none"
+                placeholder="เช่น ธนาคารกสิกรไทย"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">เลขบัญชี</label>
+              <input
+                type="text"
+                name="bank_transfer_account_number"
+                value={settings.bank_transfer_account_number}
+                onChange={handleChange}
+                className="w-full bg-dark-bg border border-white/10 rounded-lg px-4 py-2 text-white focus:border-primary focus:outline-none"
+                placeholder="เช่น 1341058186"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">ชื่อบัญชี</label>
+              <input
+                type="text"
+                name="bank_transfer_account_name"
+                value={settings.bank_transfer_account_name}
+                onChange={handleChange}
+                className="w-full bg-dark-bg border border-white/10 rounded-lg px-4 py-2 text-white focus:border-primary focus:outline-none"
+                placeholder="ชื่อเจ้าของบัญชี"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">หมายเหตุ</label>
+              <input
+                type="text"
+                name="bank_transfer_account_note"
+                value={settings.bank_transfer_account_note}
+                onChange={handleChange}
+                className="w-full bg-dark-bg border border-white/10 rounded-lg px-4 py-2 text-white focus:border-primary focus:outline-none"
+                placeholder="เช่น บัญชีแทน"
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -14,11 +14,33 @@ interface Game {
   [key: string]: any;
 }
 
+interface BankTransferInfo {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  note?: string;
+}
+
 interface CheckoutModalProps {
   selectedPackage: Package;
   game: Game;
   onClose: () => void;
 }
+
+const DEFAULT_BANK_TRANSFER: BankTransferInfo = {
+  bankName: 'ธนาคารกสิกรไทย',
+  accountNumber: '1341058186',
+  accountName: 'ชัยแสงเพชร ธนวุฒิกีรติพร',
+  note: 'บัญชีแทน',
+};
+
+const normalizePaymentNotice = (message?: string | null) => {
+  if (!message) return null;
+  if (message.includes('PromptPay is not configured')) {
+    return 'ยังไม่ได้ตั้งค่า PromptPay ระบบจะแสดงบัญชีธนาคารสำหรับโอนยอดตรงและอัปโหลดสลิปแทน';
+  }
+  return message;
+};
 
 export default function CheckoutModal({ selectedPackage, game, onClose }: CheckoutModalProps) {
   const [step, setStep] = useState(1);
@@ -33,6 +55,8 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
   const [qrString, setQrString] = useState<string | null>(null);
   const [paymentMode, setPaymentMode] = useState<'promptpay' | 'manual_transfer'>('promptpay');
   const [paymentNotice, setPaymentNotice] = useState<string | null>(null);
+  const [bankTransfer, setBankTransfer] = useState<BankTransferInfo>(DEFAULT_BANK_TRANSFER);
+  const [copiedAccount, setCopiedAccount] = useState(false);
   const [isFetchingQr, setIsFetchingQr] = useState(false);
 
   // File State
@@ -70,14 +94,28 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
         const payload = data.qrString || data.payload || data.qrCode || data.qr || '';
         setPaymentMode(data.mode === 'manual_transfer' || !payload ? 'manual_transfer' : 'promptpay');
         setQrString(payload || null);
-        setPaymentNotice(data.message || null);
+        setPaymentNotice(normalizePaymentNotice(data.message));
+        if (data.bankTransfer) {
+          setBankTransfer({ ...DEFAULT_BANK_TRANSFER, ...data.bankTransfer });
+        }
       }
     } catch (err: any) {
       setPaymentMode('manual_transfer');
       setQrString(null);
-      setPaymentNotice('ไม่สามารถโหลด QR ได้ในตอนนี้ กรุณาโอนยอดตามจำนวนและแนบสลิปเพื่อให้แอดมินตรวจสอบ');
+      setPaymentNotice('ไม่สามารถโหลด QR ได้ในตอนนี้ กรุณาโอนยอดตามบัญชีด้านล่างและแนบสลิปเพื่อให้แอดมินตรวจสอบ');
     } finally {
       setIsFetchingQr(false);
+    }
+  };
+
+  const copyAccountNumber = async () => {
+    const accountNumber = bankTransfer.accountNumber.replace(/\D/g, '') || bankTransfer.accountNumber;
+    try {
+      await navigator.clipboard.writeText(accountNumber);
+      setCopiedAccount(true);
+      window.setTimeout(() => setCopiedAccount(false), 1800);
+    } catch {
+      setPaymentNotice('คัดลอกเลขบัญชีไม่สำเร็จ กรุณาคัดลอกจากหน้าจอโดยตรง');
     }
   };
 
@@ -292,9 +330,37 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
                     ) : qrString && paymentMode === 'promptpay' ? (
                       <QRCodeSVG value={qrString} size={192} level="H" />
                     ) : (
-                      <div style={{ color: '#6b4f5f', fontSize: '14px', textAlign: 'center', lineHeight: 1.6, maxWidth: '190px' }}>
-                        <strong>โอนยอดตามจำนวน</strong><br />
-                        แล้วแนบสลิปในขั้นถัดไป
+                      <div style={{ color: '#4d4255', fontSize: '13px', textAlign: 'left', lineHeight: 1.55, width: '100%', maxWidth: '230px' }}>
+                        <div style={{ textAlign: 'center', fontWeight: 800, color: '#342d3b', fontSize: '15px', marginBottom: '12px' }}>
+                          โอนเข้าบัญชีธนาคาร
+                        </div>
+                        <div style={{ display: 'grid', gap: '8px' }}>
+                          <div>
+                            <div style={{ color: '#8f6f94', fontSize: '11px', fontWeight: 700 }}>ธนาคาร</div>
+                            <div style={{ fontWeight: 800 }}>{bankTransfer.bankName}</div>
+                          </div>
+                          <div>
+                            <div style={{ color: '#8f6f94', fontSize: '11px', fontWeight: 700 }}>เลขบัญชี</div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontWeight: 900, letterSpacing: '0.02em', fontSize: '17px' }}>{bankTransfer.accountNumber}</span>
+                              <button
+                                type="button"
+                                onClick={copyAccountNumber}
+                                style={{ border: '1px solid rgba(141,110,99,0.2)', background: 'rgba(143,111,148,0.08)', color: '#6b4f5f', borderRadius: '999px', padding: '5px 9px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              >
+                                {copiedAccount ? 'คัดลอกแล้ว' : 'คัดลอก'}
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ color: '#8f6f94', fontSize: '11px', fontWeight: 700 }}>ชื่อบัญชี</div>
+                            <div style={{ fontWeight: 800 }}>{bankTransfer.accountName}</div>
+                            {bankTransfer.note && <div style={{ color: '#675d72', fontSize: '12px' }}>{bankTransfer.note}</div>}
+                          </div>
+                        </div>
+                        <div style={{ marginTop: '12px', padding: '8px 10px', borderRadius: '12px', background: 'rgba(245,158,11,0.1)', color: '#7c5b35', fontSize: '12px', fontWeight: 700, textAlign: 'center' }}>
+                          โอนให้ตรงยอด ฿{totalPrice} แล้วอัปโหลดสลิป
+                        </div>
                       </div>
                     )}
                   </div>
