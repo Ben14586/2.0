@@ -8,6 +8,7 @@
     "build": "python tools/build_frontend.py",
     "design:lint": "python tools/lint_design.py",
     "package:backend": "python tools/package_backend.py",
+    "predeploy:check": "python tools/predeploy_check.py",
     "test:backend": "cd backend-node && npm test"
   },
   "dependencies": {

@@ -825,3 +825,4 @@ Validation:
 - Added idempotent catalog bootstrap from `config/catalog-seed.json`; it runs only when the games table is empty.
 - Docker now includes the catalog seed and Node production defaults to `/app/data/database.db` whenever the Render disk is mounted.
 - Changed Render health check to `/health` and added stale admin-session validation so invalid saved tokens return users to login instead of a blank page.
+- Added `npm run predeploy:check` and GitHub Actions coverage for tracked backend files, Docker inputs, persistent database configuration, 97 active seed games, generated assets, and secret/data exclusions.
