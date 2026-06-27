@@ -20,5 +20,5 @@ jobs:
       - run: npm ci
       - run: npm ci --prefix backend-node
       - run: npm run test:backend
-      - run: npm run build
       - run: npm run predeploy:check
+      - run: npm run build
