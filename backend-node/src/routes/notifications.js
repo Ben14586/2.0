@@ -11,14 +11,15 @@ router.get('/notifications', verifyUser, async (req, res) => {
       return res.status(400).json({ success: false, error: 'tel query parameter is required' });
     }
 
-    const user = await db.get('SELECT id FROM users WHERE tel = ?', [tel]);
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
+    if (process.env.NODE_ENV !== 'test') {
+      const owner = await db.get('SELECT tel FROM users WHERE id = ?', [req.user.id]);
+      if (!owner || owner.tel !== tel) {
+        return res.status(403).json({ success: false, error: 'Forbidden: Access denied' });
+      }
     }
 
-    if (user.id !== req.user.id && process.env.NODE_ENV !== 'test') {
-      return res.status(403).json({ success: false, error: 'Forbidden: Access denied' });
-    }
+    const user = await db.get('SELECT id FROM users WHERE tel = ?', [tel]);
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
     const notifications = await db.all(
       'SELECT id, user_id, message, is_read, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 20',

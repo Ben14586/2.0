@@ -12,7 +12,17 @@ describe('Real-World Simulation Scenarios (scenarios.test.js)', () => {
       expect(catalogRes.body.success).toBe(true);
     }
 
-    // 2. Creates account with referral code
+    // 2. Creates a real referrer, then creates the customer with that referral code.
+    const referrer = `ref_s1_${Date.now()}`;
+    const referrerRes = await request(app)
+      .post('/api/auth/register')
+      .send({
+        username: referrer,
+        password: 'secure_password',
+        display_name: 'Scenario 1 Referrer'
+      });
+    expect(referrerRes.status).toBe(201);
+
     const uniqueUser = `cust_s1_${Date.now()}`;
     const regRes = await request(app)
       .post('/api/auth/register')
@@ -21,7 +31,7 @@ describe('Real-World Simulation Scenarios (scenarios.test.js)', () => {
         password: 'secure_password',
         display_name: 'Scenario 1 Customer',
         tel: '0812341111',
-        referral_code: 'admin' // Referrer is admin or existing user
+        referral_code: referrer
       });
 
     let token = 'mock_s1_token';

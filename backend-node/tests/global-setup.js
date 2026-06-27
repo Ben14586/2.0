@@ -2,8 +2,6 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = async () => {
-  const rootDir = path.resolve(__dirname, '..', '..');
-  const sourceDb = path.join(rootDir, 'database.db');
   const testDb = path.join(__dirname, '..', 'test.sqlite');
 
   for (const suffix of ['', '-shm', '-wal']) {
@@ -13,7 +11,11 @@ module.exports = async () => {
     }
   }
 
-  if (fs.existsSync(sourceDb)) {
-    fs.copyFileSync(sourceDb, testDb);
-  }
+  process.env.NODE_ENV = 'test';
+  process.env.DATABASE_PATH = testDb;
+  process.env.ADMIN_USERNAME = 'admin';
+  process.env.ADMIN_BOOTSTRAP_PASSWORD = 'adminpassword';
+
+  const { initializeDatabase } = require('../src/db/init');
+  await initializeDatabase();
 };
