@@ -11,6 +11,30 @@ import { AdminLogin } from './components/AdminLogin';
 export function AdminApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [token, setToken] = useState<string | null>(localStorage.getItem('admin_token'));
+  const [checkingSession, setCheckingSession] = useState(Boolean(token));
+
+  useEffect(() => {
+    if (!token) {
+      setCheckingSession(false);
+      return;
+    }
+
+    const apiBaseUrl = (window as any).API_BASE_URL || '';
+    fetch(`${apiBaseUrl}/api/admin-dashboard`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then((response) => {
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('admin_token');
+        setToken(null);
+      }
+    }).catch(() => {
+      // Keep the session during transient network failures and let each page show its retry state.
+    }).finally(() => setCheckingSession(false));
+  }, [token]);
+
+  if (checkingSession) {
+    return <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: 'var(--text)' }}>กำลังตรวจสอบสิทธิ์...</main>;
+  }
 
   if (!token) {
     return (

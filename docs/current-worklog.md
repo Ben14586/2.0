@@ -818,3 +818,10 @@ Validation:
 - The configured admin is created or its password is securely rotated from `ADMIN_USERNAME` and `ADMIN_BOOTSTRAP_PASSWORD`; changing the Render secret and redeploying restores access.
 - Render now persists SQLite at `/app/data/database.db` and requests admin/bootstrap secrets during Blueprint setup.
 - Localized the admin login form and invalid-credential message in Thai.
+
+# 2026-06-27 - Production Empty Catalog and Admin Recovery
+
+- Confirmed live `/api/games` returned an empty list because the new Node database had no catalog seed.
+- Added idempotent catalog bootstrap from `config/catalog-seed.json`; it runs only when the games table is empty.
+- Docker now includes the catalog seed and Node production defaults to `/app/data/database.db` whenever the Render disk is mounted.
+- Changed Render health check to `/health` and added stale admin-session validation so invalid saved tokens return users to login instead of a blank page.

@@ -17,6 +17,9 @@ RUN cd backend-node && npm install --production
 # Copy backend code
 COPY backend-node/ ./backend-node/
 
+# Copy the public catalog seed used only when the persistent database is empty
+COPY config/catalog-seed.json ./config/catalog-seed.json
+
 # Copy pre-built frontend
 COPY dist/ ./dist/
 

@@ -13,6 +13,7 @@ INCLUDE_FILES = (
     "render.yaml",
     "Procfile",
     "DESIGN.md",
+    "config/catalog-seed.json",
 )
 
 INCLUDE_DIRS = (
@@ -62,6 +63,7 @@ def validate_archive() -> None:
             "backend-node/package.json",
             "backend-node/package-lock.json",
             "backend-node/src/server.js",
+            "config/catalog-seed.json",
             "dist/index.html",
         }
         missing = sorted(required - names)

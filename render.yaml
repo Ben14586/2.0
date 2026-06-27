@@ -3,7 +3,7 @@ services:
     name: game-services
     runtime: docker
     plan: free
-    healthCheckPath: /api/games
+    healthCheckPath: /health
     disk:
       name: game-data
       mountPath: /app/data

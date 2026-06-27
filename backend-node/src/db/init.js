@@ -197,6 +197,137 @@ const DEFAULT_SETTINGS = [
   ['maintenance_mode', 'false']
 ];
 
+function seedCatalogIfEmpty(db, done) {
+  db.get('SELECT COUNT(*) AS count FROM games', (countError, row) => {
+    if (countError) return done(countError);
+    if (row.count > 0) return done(null);
+
+    const seedPath = path.resolve(__dirname, '../../../config/catalog-seed.json');
+    if (!fs.existsSync(seedPath)) {
+      return done(new Error(`Catalog seed not found: ${seedPath}`));
+    }
+
+    let seed;
+    try {
+      seed = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+    } catch (error) {
+      return done(error);
+    }
+
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION');
+
+      const categoryStmt = db.prepare(`
+        INSERT OR IGNORE INTO categories (id, name, slug, sort_order, is_active)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      for (const item of seed.categories || []) {
+        categoryStmt.run(item.id, item.name, item.slug, item.sort_order, item.is_active);
+      }
+      categoryStmt.finalize();
+
+      const gameStmt = db.prepare(`
+        INSERT OR IGNORE INTO games (
+          id, category_id, name, slug, image, description, cover_image, is_hot,
+          has_bonus, ban_status, ban_risk_percentage, supported_android,
+          supported_ios, warranty_days, warranty_note, is_featured, is_active,
+          reference_title, play_store, catalog_type, screenshots, video_url,
+          category_name, category_slug, play_image
+        ) VALUES (${Array(25).fill('?').join(', ')})
+      `);
+      for (const item of seed.games || []) {
+        gameStmt.run(
+          item.id, item.category_id, item.name, item.slug, item.image, item.description,
+          item.cover_image, item.is_hot, item.has_bonus, item.ban_status,
+          item.ban_risk_percentage, item.supported_android, item.supported_ios,
+          item.warranty_days, item.warranty_note, item.is_featured, item.is_active,
+          item.reference_title, item.play_store, item.catalog_type, item.screenshots,
+          item.video_url, item.category_name, item.category_slug, item.play_image
+        );
+      }
+      gameStmt.finalize();
+
+      const packageStmt = db.prepare(`
+        INSERT OR IGNORE INTO packages (
+          id, game_id, name, price, original_price, is_bestseller, subtitle,
+          description, badge, is_recommended, highlights, delivery, support,
+          guarantee, audience, admin_notes, is_active, points_reward
+        ) VALUES (${Array(18).fill('?').join(', ')})
+      `);
+      for (const item of seed.packages || []) {
+        packageStmt.run(
+          item.id, item.game_id, item.name, item.price, item.original_price,
+          item.is_bestseller, item.subtitle, item.description, item.badge,
+          item.is_recommended, item.highlights, item.delivery, item.support,
+          item.guarantee, item.audience, item.admin_notes, item.is_active,
+          item.points_reward
+        );
+      }
+      packageStmt.finalize();
+
+      db.run('COMMIT', (commitError) => {
+        if (!commitError) {
+          console.log(`Catalog seed imported: ${(seed.games || []).length} games, ${(seed.packages || []).length} packages`);
+        }
+        done(commitError || null);
+      });
+    });
+  });
+}
+
+function ensureAdmin(db, resolve, reject) {
+  const username = (process.env.ADMIN_USERNAME || 'admin').trim();
+  const password = process.env.ADMIN_BOOTSTRAP_PASSWORD || '';
+  const hasSecurePassword = password && password !== 'change-this-before-first-run';
+
+  db.get('SELECT id, password_hash FROM admins WHERE username = ?', [username], (err, admin) => {
+    if (err) {
+      console.error('Error checking admins:', err.message);
+      db.close();
+      return reject(err);
+    }
+
+    if (!admin) {
+      if (!hasSecurePassword) {
+        console.error('No admin exists. Set a secure ADMIN_BOOTSTRAP_PASSWORD and redeploy.');
+        db.close();
+        return resolve();
+      }
+
+      const passwordHash = bcrypt.hashSync(password, 12);
+      db.run('INSERT INTO admins (username, password_hash) VALUES (?, ?)', [username, passwordHash], (insertError) => {
+        if (insertError) {
+          console.error('Admin bootstrap failed:', insertError.message);
+          db.close();
+          return reject(insertError);
+        }
+        console.log(`Bootstrap admin created: ${username}`);
+        db.close();
+        resolve();
+      });
+      return;
+    }
+
+    if (hasSecurePassword && !bcrypt.compareSync(password, admin.password_hash)) {
+      const passwordHash = bcrypt.hashSync(password, 12);
+      db.run('UPDATE admins SET password_hash = ?, token = NULL WHERE id = ?', [passwordHash, admin.id], (updateError) => {
+        if (updateError) {
+          console.error('Admin password rotation failed:', updateError.message);
+          db.close();
+          return reject(updateError);
+        }
+        console.log(`Admin password synchronized from environment: ${username}`);
+        db.close();
+        resolve();
+      });
+      return;
+    }
+
+    db.close();
+    resolve();
+  });
+}
+
 function initializeDatabase() {
   return new Promise((resolve, reject) => {
     const dbDir = path.dirname(env.DATABASE_PATH);
@@ -225,62 +356,19 @@ function initializeDatabase() {
       DEFAULT_SETTINGS.forEach(([key, value]) => {
         settingsStmt.run(key, value);
       });
-      settingsStmt.finalize();
-
-      // Create or rotate the configured admin from environment variables.
-      const username = (process.env.ADMIN_USERNAME || 'admin').trim();
-      const password = process.env.ADMIN_BOOTSTRAP_PASSWORD || '';
-      const hasSecurePassword = password && password !== 'change-this-before-first-run';
-
-      db.get('SELECT id, password_hash FROM admins WHERE username = ?', [username], (err, admin) => {
-        if (err) {
-          console.error('Error checking admins:', err.message);
+      settingsStmt.finalize((settingsError) => {
+        if (settingsError) {
           db.close();
-          return reject(err);
+          return reject(settingsError);
         }
-
-        if (!admin) {
-          if (!hasSecurePassword) {
-            console.error('No admin exists. Set a secure ADMIN_BOOTSTRAP_PASSWORD and redeploy.');
+        seedCatalogIfEmpty(db, (seedError) => {
+          if (seedError) {
+            console.error('Catalog bootstrap failed:', seedError.message);
             db.close();
-            return resolve();
+            return reject(seedError);
           }
-
-          const passwordHash = bcrypt.hashSync(password, 12);
-          db.run(
-            'INSERT INTO admins (username, password_hash) VALUES (?, ?)',
-            [username, passwordHash],
-            (insertError) => {
-              if (insertError) {
-                console.error('Admin bootstrap failed:', insertError.message);
-                db.close();
-                return reject(insertError);
-              }
-              console.log(`Bootstrap admin created: ${username}`);
-              db.close();
-              resolve();
-            }
-          );
-          return;
-        }
-
-        if (hasSecurePassword && !bcrypt.compareSync(password, admin.password_hash)) {
-          const passwordHash = bcrypt.hashSync(password, 12);
-          db.run('UPDATE admins SET password_hash = ?, token = NULL WHERE id = ?', [passwordHash, admin.id], (updateError) => {
-            if (updateError) {
-              console.error('Admin password rotation failed:', updateError.message);
-              db.close();
-              return reject(updateError);
-            }
-            console.log(`Admin password synchronized from environment: ${username}`);
-            db.close();
-            resolve();
-          });
-          return;
-        }
-
-        db.close();
-        resolve();
+          ensureAdmin(db, resolve, reject);
+        });
       });
     });
   });
