@@ -4,15 +4,31 @@ const https = require('https');
 const db = require('../db/helpers');
 const { verifyAdmin } = require('../middleware/auth');
 
+const SENSITIVE_KEYS = new Set(['telegram_bot_token', 'slipok_api_key', 'line_notify_token']);
+const ALLOWED_KEYS = new Set([
+  'telegram_bot_token', 'telegram_chat_id', 'slipok_api_key', 'slipok_branch_id',
+  'promptpay_id', 'bank_transfer_bank_name', 'bank_transfer_account_number',
+  'bank_transfer_account_name', 'bank_transfer_account_note', 'line_notify_token'
+]);
+
 // GET /api/admin-settings
 router.get('/admin-settings', verifyAdmin, async (req, res) => {
   try {
     const rows = await db.all('SELECT key, value FROM settings');
     const settings = {};
+    const secretConfigured = {};
     for (const r of rows) {
-      settings[r.key] = r.value;
+      if (SENSITIVE_KEYS.has(r.key)) {
+        settings[r.key] = '';
+        secretConfigured[r.key] = Boolean(r.value);
+      } else {
+        settings[r.key] = r.value;
+      }
     }
-    return res.status(200).json({ success: true, data: settings });
+    secretConfigured.telegram_bot_token ||= Boolean(process.env.TELEGRAM_BOT_TOKEN);
+    secretConfigured.slipok_api_key ||= Boolean(process.env.SLIPOK_API_KEY);
+    secretConfigured.line_notify_token ||= Boolean(process.env.LINE_NOTIFY_TOKEN);
+    return res.status(200).json({ success: true, data: settings, secretConfigured });
   } catch (error) {
     console.error('Get settings error:', error);
     return res.status(500).json({ success: false, error: 'Internal Server Error' });
@@ -28,6 +44,8 @@ router.post('/admin-settings', verifyAdmin, async (req, res) => {
     }
 
     for (const [key, value] of Object.entries(settings)) {
+      if (!ALLOWED_KEYS.has(key)) continue;
+      if (SENSITIVE_KEYS.has(key) && String(value).trim() === '') continue;
       await db.run(
         'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?',
         [key, String(value), String(value)]
@@ -47,7 +65,7 @@ router.post('/admin-test-telegram', verifyAdmin, async (req, res) => {
     const tokenRow = await db.get("SELECT value FROM settings WHERE key = 'telegram_bot_token'");
     const chatRow = await db.get("SELECT value FROM settings WHERE key = 'telegram_chat_id'");
 
-    const token = tokenRow ? tokenRow.value.trim() : '';
+    const token = (process.env.TELEGRAM_BOT_TOKEN || (tokenRow ? tokenRow.value : '')).trim();
     const chatId = chatRow ? chatRow.value.trim() : '';
 
     if (!token || !chatId) {

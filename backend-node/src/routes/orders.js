@@ -21,12 +21,105 @@ function maskUsername(username) {
   return str.slice(0, 2) + '***' + str.slice(-2);
 }
 
+const slipUploadDir = process.env.SLIP_UPLOAD_DIR
+  || (process.env.NODE_ENV === 'production' && fs.existsSync('/app/data')
+    ? '/app/data/slips'
+    : path.join(process.cwd(), 'uploads', 'slips'));
+
+function hasValidImageSignature(filePath) {
+  const bytes = fs.readFileSync(filePath).subarray(0, 12);
+  const png = bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  const jpeg = bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  const webp = bytes.length >= 12 && bytes.subarray(0, 4).toString() === 'RIFF' && bytes.subarray(8, 12).toString() === 'WEBP';
+  return png || jpeg || webp;
+}
+
+async function getSecretSetting(envName, settingKey) {
+  if (process.env[envName]) return process.env[envName].trim();
+  const row = await db.get('SELECT value FROM settings WHERE key = ?', [settingKey]);
+  return row && row.value ? String(row.value).trim() : '';
+}
+
+async function verifySlip(file, expectedAmount) {
+  const buffer = fs.readFileSync(file.path);
+  const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
+
+  if (process.env.NODE_ENV === 'test') {
+    return { fileHash, transRef: `TEST-${crypto.randomUUID()}`, amount: expectedAmount };
+  }
+
+  const duplicateFile = await db.get('SELECT id FROM slip_checks WHERE file_hash = ?', [fileHash]);
+  if (duplicateFile) {
+    const error = new Error('สลิปนี้ถูกใช้งานแล้ว');
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const apiKey = await getSecretSetting('SLIPOK_API_KEY', 'slipok_api_key');
+  const branchId = await getSecretSetting('SLIPOK_BRANCH_ID', 'slipok_branch_id');
+  if (!apiKey || !branchId) {
+    const error = new Error('ระบบตรวจสลิปยังไม่พร้อม กรุณาติดต่อผู้ดูแล');
+    error.statusCode = 503;
+    error.code = 'SLIP_VERIFICATION_NOT_CONFIGURED';
+    throw error;
+  }
+
+  const form = new FormData();
+  form.append('files', new Blob([buffer], { type: file.mimetype }), file.originalname);
+  form.append('log', 'true');
+  form.append('amount', String(expectedAmount));
+
+  let response;
+  try {
+    response = await fetch(`https://api.slipok.com/api/line/apikey/${encodeURIComponent(branchId)}`, {
+      method: 'POST',
+      headers: { 'x-authorization': apiKey },
+      body: form,
+      signal: AbortSignal.timeout(20000)
+    });
+  } catch (cause) {
+    const error = new Error('เชื่อมต่อระบบตรวจสลิปไม่ได้ กรุณาลองใหม่');
+    error.statusCode = 502;
+    error.cause = cause;
+    throw error;
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  const details = payload.data && payload.data.data ? payload.data.data : payload.data;
+  if (!response.ok || payload.success !== true || !details || details.success === false) {
+    const error = new Error(payload.message || details?.message || 'สลิปไม่ผ่านการตรวจสอบ');
+    error.statusCode = response.status === 409 ? 409 : 422;
+    throw error;
+  }
+
+  const amount = Number(details.amount);
+  const transRef = String(details.transRef || '').trim();
+  if (!Number.isFinite(amount) || Math.abs(amount - expectedAmount) > 0.009) {
+    const error = new Error(`ยอดเงินในสลิปไม่ตรง ต้องชำระ ${expectedAmount} บาท`);
+    error.statusCode = 422;
+    throw error;
+  }
+  if (!transRef) {
+    const error = new Error('ไม่พบเลขอ้างอิงธุรกรรมในสลิป');
+    error.statusCode = 422;
+    throw error;
+  }
+
+  const duplicateTransaction = await db.get('SELECT id FROM slip_checks WHERE id = ?', [transRef]);
+  if (duplicateTransaction) {
+    const error = new Error('ธุรกรรมนี้ถูกใช้ยืนยันออเดอร์แล้ว');
+    error.statusCode = 409;
+    throw error;
+  }
+
+  return { fileHash, transRef, amount };
+}
+
 // Multer storage setup for slip images
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = path.join(process.cwd(), 'uploads', 'slips');
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
+    fs.mkdirSync(slipUploadDir, { recursive: true });
+    cb(null, slipUploadDir);
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -39,7 +132,7 @@ const upload = multer({
   storage,
   limits: { fileSize: 3 * 1024 * 1024 }, // 3MB limit
   fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png/;
+    const filetypes = /jpeg|jpg|png|webp/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = filetypes.test(file.mimetype);
     if (extname && mimetype) {
@@ -155,11 +248,40 @@ router.post('/orders', (req, res) => {
 
       const finalPrice = parseFloat(pkg.price);
 
-      await db.run(
-        `INSERT INTO orders (id, game_id, package_id, game_username, game_password, login_method, price, slip_image, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [orderId, gameId, packageId, gameUsername, gamePassword, loginMethod, finalPrice, slipUrl, 'pending']
-      );
+      if (!hasValidImageSignature(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ success: false, error: 'ไฟล์ที่แนบไม่ใช่รูปสลิปที่รองรับ' });
+      }
+
+      let verification;
+      try {
+        verification = await verifySlip(req.file, finalPrice);
+      } catch (verificationError) {
+        try { fs.unlinkSync(req.file.path); } catch (e) {}
+        return res.status(verificationError.statusCode || 422).json({
+          success: false,
+          code: verificationError.code || 'SLIP_VERIFICATION_FAILED',
+          error: verificationError.message || 'สลิปไม่ผ่านการตรวจสอบ'
+        });
+      }
+
+      await db.run('BEGIN IMMEDIATE TRANSACTION');
+      try {
+        await db.run(
+          `INSERT INTO slip_checks (id, file_hash, expected_amount, file_ext, status, note, slip_url)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [verification.transRef, verification.fileHash, finalPrice, path.extname(req.file.originalname).toLowerCase(), 'verified', 'SlipOK verified', slipUrl]
+        );
+        await db.run(
+          `INSERT INTO orders (id, game_id, package_id, game_username, game_password, login_method, price, slip_image, slip_verified, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [orderId, gameId, packageId, gameUsername, gamePassword, loginMethod, finalPrice, slipUrl, 1, 'pending']
+        );
+        await db.run('COMMIT');
+      } catch (transactionError) {
+        await db.run('ROLLBACK').catch(() => {});
+        throw transactionError;
+      }
 
       const lineToken = process.env.LINE_NOTIFY_TOKEN || process.env.line_notify_token;
       if (lineToken) {
@@ -174,7 +296,7 @@ router.post('/orders', (req, res) => {
         sendTelegramNotify(telegramToken, telegramChatId, message).catch(e => console.error('Telegram Notify error:', e.message));
       }
 
-      return res.status(201).json({ success: true, orderId, message: 'Order created successfully' });
+      return res.status(201).json({ success: true, orderId, paymentVerified: true, status: 'pending', message: 'Payment verified and order created' });
     } catch (error) {
       console.error('Create order error:', error);
       if (req.file) {
@@ -317,15 +439,31 @@ router.get('/orders/track', async (req, res) => {
 });
 
 // POST /api/orders/verify-slip
-router.post('/orders/verify-slip', (req, res) => {
-  upload.single('slipImage')(req, res, (err) => {
+router.post('/orders/verify-slip', verifyAdmin, (req, res) => {
+  upload.single('slipImage')(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ success: false, error: err.message });
     }
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
-    return res.status(200).json({ success: true, message: 'Slip uploaded and verified successfully' });
+    if (!hasValidImageSignature(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ success: false, error: 'Invalid image signature' });
+    }
+    const amount = Number(req.body.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ success: false, error: 'Valid amount is required' });
+    }
+    try {
+      const result = await verifySlip(req.file, amount);
+      fs.unlinkSync(req.file.path);
+      return res.status(200).json({ success: true, paymentVerified: true, transRef: result.transRef, amount: result.amount });
+    } catch (verificationError) {
+      try { fs.unlinkSync(req.file.path); } catch (e) {}
+      return res.status(verificationError.statusCode || 422).json({ success: false, error: verificationError.message });
+    }
   });
 });
 

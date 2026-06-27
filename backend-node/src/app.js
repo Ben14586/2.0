@@ -44,6 +44,11 @@ app.use(express.urlencoded({ limit: '5mb', extended: true }));
 // 5. Rate Limiter
 app.use(rateLimiter);
 
+// Serve durable payment evidence from the mounted production disk.
+const slipUploadsPath = process.env.SLIP_UPLOAD_DIR
+  || (process.env.NODE_ENV === 'production' && fs.existsSync('/app/data') ? '/app/data/slips' : path.resolve(process.cwd(), 'uploads/slips'));
+app.use('/uploads/slips', express.static(slipUploadsPath));
+
 // Serve static assets from uploads and dist folders
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
@@ -107,4 +112,3 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 module.exports = app;
-
