@@ -1,97 +1,103 @@
 from __future__ import annotations
 
-import json
-import sqlite3
 import zipfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "backend-deploy-latest.zip"
-INCLUDE_FILES = [
-    "server.py",
-    "requirements.txt",
+
+INCLUDE_FILES = (
     "Dockerfile",
     ".dockerignore",
-    "Procfile",
     "render.yaml",
-    "railway.json",
-    ".env.example",
-    "README.md",
-    "config/catalog-seed.json",
-    "index.html",
-    "admin.html",
-    "runtime-config.js",
-    "netlify.toml",
-    "package.json",
-    "package-lock.json",
-    "vite.config.ts",
-    "tailwind.config.js",
-    "postcss.config.js",
-    "tsconfig.json",
-]
-INCLUDE_DIRS = [
-    "components",
-    "docs",
+    "Procfile",
+    "DESIGN.md",
+)
+
+INCLUDE_DIRS = (
+    "backend-node/src",
     "dist",
-    "frontend",
-    "lib",
-    "tools",
     "uploads/game-images",
-]
+)
+
+BACKEND_MANIFESTS = (
+    "backend-node/package.json",
+    "backend-node/package-lock.json",
+)
+
+FORBIDDEN_PARTS = {
+    ".git",
+    ".env",
+    "node_modules",
+    "backups",
+    "slips",
+    "tests",
+    "__pycache__",
+}
+
+FORBIDDEN_SUFFIXES = {".db", ".sqlite", ".sqlite3", ".zip", ".pyc", ".log"}
 
 
 def should_include(path: Path) -> bool:
-    parts = set(path.parts)
-    if "__pycache__" in parts:
+    relative = path.relative_to(ROOT)
+    if any(part in FORBIDDEN_PARTS for part in relative.parts):
         return False
-    if path.suffix.lower() in {".pyc", ".db", ".zip"}:
-        return False
-    return True
+    return path.suffix.lower() not in FORBIDDEN_SUFFIXES
 
-def export_catalog_seed() -> None:
-    db_path = ROOT / "database.db"
-    output_path = ROOT / "config" / "catalog-seed.json"
-    if not db_path.exists():
-        return
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    try:
-        seed = {}
-        for table_name in ("categories", "games", "packages"):
-            seed[table_name] = [
-                dict(row)
-                for row in conn.execute(f"SELECT * FROM {table_name}").fetchall()
-            ]
-    finally:
-        conn.close()
+def add_file(archive: zipfile.ZipFile, relative_name: str) -> None:
+    path = ROOT / relative_name
+    if not path.is_file():
+        raise FileNotFoundError(f"Required deploy file is missing: {relative_name}")
+    archive.write(path, relative_name)
 
-    output_path.write_text(json.dumps(seed, ensure_ascii=False, indent=2), encoding="utf-8")
+
+def validate_archive() -> None:
+    with zipfile.ZipFile(OUTPUT) as archive:
+        names = set(archive.namelist())
+        required = {
+            "Dockerfile",
+            "render.yaml",
+            "backend-node/package.json",
+            "backend-node/package-lock.json",
+            "backend-node/src/server.js",
+            "dist/index.html",
+        }
+        missing = sorted(required - names)
+        unsafe = sorted(
+            name for name in names
+            if any(part in FORBIDDEN_PARTS for part in Path(name).parts)
+            or Path(name).suffix.lower() in FORBIDDEN_SUFFIXES
+        )
+        if missing:
+            raise RuntimeError(f"Deploy package is missing: {', '.join(missing)}")
+        if unsafe:
+            raise RuntimeError(f"Deploy package contains unsafe files: {', '.join(unsafe[:5])}")
 
 
 def main() -> None:
-    export_catalog_seed()
-
     if OUTPUT.exists():
         OUTPUT.unlink()
 
     with zipfile.ZipFile(OUTPUT, "w", zipfile.ZIP_DEFLATED) as archive:
-        for file_name in INCLUDE_FILES:
-            path = ROOT / file_name
-            if path.is_file():
-                archive.write(path, path.relative_to(ROOT))
-        for dir_name in INCLUDE_DIRS:
-            base = ROOT / dir_name
-            if not base.exists():
-                continue
-            for path in base.rglob("*"):
-                if path.is_file() and should_include(path.relative_to(ROOT)):
-                    archive.write(path, path.relative_to(ROOT))
+        for relative_name in (*INCLUDE_FILES, *BACKEND_MANIFESTS):
+            add_file(archive, relative_name)
 
-    print(f"Backend deploy package: {OUTPUT}")
-    print(f"Size: {OUTPUT.stat().st_size} bytes")
+        for directory in INCLUDE_DIRS:
+            base = ROOT / directory
+            if not base.is_dir():
+                raise FileNotFoundError(f"Required deploy directory is missing: {directory}")
+            for path in base.rglob("*"):
+                if path.is_file() and should_include(path):
+                    archive.write(path, path.relative_to(ROOT).as_posix())
+
+    validate_archive()
+    with zipfile.ZipFile(OUTPUT) as archive:
+        print(f"Backend deploy package: {OUTPUT}")
+        print(f"Files: {len(archive.namelist())}")
+        print(f"Size: {OUTPUT.stat().st_size} bytes")
+        print("Validation: passed (Node backend, no databases, secrets, dependencies, tests, or slips)")
 
 
 if __name__ == "__main__":

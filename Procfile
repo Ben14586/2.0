@@ -1,1 +1,1 @@
-web: python server.py
+web: cd backend-node && npm start

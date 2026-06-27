@@ -9,6 +9,16 @@ services:
       mountPath: /app/data
       sizeGB: 1
     envVars:
+      - key: DATABASE_FILE
+        value: /app/data/database.db
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_BOOTSTRAP_PASSWORD
+        sync: false
+      - key: ADMIN_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
       - key: PORT
         value: 3000
       - key: HOST
@@ -22,9 +32,4 @@ services:
       - key: ALLOWED_ORIGINS
         value: https://game-services-hwcy.onrender.com
 
-# Legacy tokens for qa_check.py compatibility:
-# healthCheckPath: /health
-# startCommand: python server.py
-# PUBLIC_API_BASE_URL
-# mountPath: /var/data
-# UPLOADS_DIR
+# Updated for Node.js Backend

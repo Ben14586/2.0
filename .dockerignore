@@ -12,7 +12,6 @@ uploads/slips/
 .venv/
 .qodo/
 database.db.bak
-backend-node/
 python_portable/
 python/
 python.bat
@@ -29,4 +28,13 @@ download_game_images.py
 update_images.py
 update_images_missing_local.py
 database.db
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+backend-node/tests/
+backend-node/backups/
+backend-node/uploads/
+backend-node/test_*
+backend-node/verify_*
 backups/

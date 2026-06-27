@@ -9,22 +9,24 @@ interface CategoryFilterProps {
 
 export function CategoryFilter({ categories, activeCategory, onSelectCategory }: CategoryFilterProps) {
   return (
-    <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
-      <button 
+    <div className="category-filter" role="group" aria-label="กรองตามหมวดหมู่เกม">
+      <button
+        type="button"
         className={activeCategory === 'all' ? 'primary-action' : 'secondary-action'}
+        aria-pressed={activeCategory === 'all'}
         onClick={() => onSelectCategory('all')}
-        style={{ whiteSpace: 'nowrap', borderRadius: '20px', padding: '6px 16px', fontSize: '14px', minHeight: 'auto' }}
       >
         ทั้งหมด
       </button>
-      {categories.map(cat => (
-        <button 
-          key={cat.id}
-          className={activeCategory === cat.id ? 'primary-action' : 'secondary-action'}
-          onClick={() => onSelectCategory(cat.id)}
-          style={{ whiteSpace: 'nowrap', borderRadius: '20px', padding: '6px 16px', fontSize: '14px', minHeight: 'auto' }}
+      {categories.map((category) => (
+        <button
+          type="button"
+          key={category.id}
+          className={activeCategory === category.id ? 'primary-action' : 'secondary-action'}
+          aria-pressed={activeCategory === category.id}
+          onClick={() => onSelectCategory(category.id)}
         >
-          {cat.name}
+          {category.name}
         </button>
       ))}
     </div>

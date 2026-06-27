@@ -27,10 +27,10 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
       if (response.ok && data.success) {
         onLoginSuccess(data.token);
       } else {
-        setError(data.error || 'Invalid credentials');
+        setError(response.status === 401 ? 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' : (data.error || 'ไม่สามารถเข้าสู่ระบบได้'));
       }
     } catch (err) {
-      setError('Connection failed. Please check if the server is running.');
+      setError('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่อีกครั้ง');
     } finally {
       setLoading(false);
     }
@@ -40,8 +40,8 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
     <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', background: 'var(--bg-1)', padding: '20px' }}>
       <div style={{ width: '100%', maxWidth: '400px', background: 'var(--panel-2)', padding: '32px', borderRadius: '24px', border: '1px solid var(--line)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <h2 style={{ color: 'var(--text)', margin: '0 0 8px 0', fontSize: '24px' }}>Admin Portal</h2>
-          <p style={{ color: 'var(--muted)', margin: 0, fontSize: '14px' }}>กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</p>
+          <h2 style={{ color: 'var(--text)', margin: '0 0 8px 0', fontSize: '24px' }}>แผงควบคุมแอดมิน</h2>
+          <p style={{ color: 'var(--muted)', margin: 0, fontSize: '14px' }}>เข้าสู่ระบบด้วยบัญชีผู้ดูแลที่กำหนดบนเซิร์ฟเวอร์</p>
         </div>
 
         {error && (
@@ -52,7 +52,7 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
 
         <form onSubmit={handleLogin} style={{ display: 'grid', gap: '16px' }}>
           <label style={{ display: 'grid', gap: '6px' }}>
-            <span style={{ color: 'var(--muted)', fontSize: '13px', fontWeight: 500 }}>Username</span>
+            <span style={{ color: 'var(--muted)', fontSize: '13px', fontWeight: 500 }}>ชื่อผู้ใช้</span>
             <input
               type="text"
               value={username}
@@ -67,7 +67,7 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
           </label>
 
           <label style={{ display: 'grid', gap: '6px' }}>
-            <span style={{ color: 'var(--muted)', fontSize: '13px', fontWeight: 500 }}>Password</span>
+            <span style={{ color: 'var(--muted)', fontSize: '13px', fontWeight: 500 }}>รหัสผ่าน</span>
             <input
               type="password"
               value={password}
@@ -90,7 +90,7 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
               color: '#fff', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer'
             }}
           >
-            {loading ? 'Logging in...' : 'Sign In'}
+            {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
           </button>
         </form>
       </div>

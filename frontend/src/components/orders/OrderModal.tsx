@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Check, PackageCheck, ShieldCheck, X } from 'lucide-react';
 import { Game, Package } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import CheckoutModal from '../CheckoutModal';
@@ -49,7 +50,7 @@ export function OrderModal({ game, onClose }: OrderModalProps) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-      <div className="glass-card" style={{ width: '100%', maxWidth: '900px', maxHeight: '90vh', overflowY: 'auto', padding: 0, position: 'relative', borderRadius: '20px', overflow: 'hidden' }}>
+      <div className="glass-card" role="dialog" aria-modal="true" aria-labelledby="order-modal-title" style={{ width: '100%', maxWidth: '900px', maxHeight: '90vh', overflowY: 'auto', padding: 0, position: 'relative', borderRadius: '20px', overflow: 'hidden' }}>
 
         {/* Header with game info */}
         <div style={{
@@ -60,9 +61,10 @@ export function OrderModal({ game, onClose }: OrderModalProps) {
         }}>
           <button
             onClick={onClose}
+            aria-label="ปิดรายละเอียดเกม"
             style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.2)', border: 'none', fontSize: '18px', cursor: 'pointer', color: 'white', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
           >
-            &times;
+            <X size={18} aria-hidden="true" />
           </button>
 
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
@@ -70,7 +72,7 @@ export function OrderModal({ game, onClose }: OrderModalProps) {
               <img src={gameImage} alt={game.name} style={{ width: '56px', height: '56px', borderRadius: '14px', objectFit: 'cover', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }} />
             )}
             <div>
-              <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 700 }}>{game.name}</h2>
+              <h2 id="order-modal-title" style={{ margin: 0, fontSize: '22px', fontWeight: 700 }}>{game.name}</h2>
               <p style={{ margin: '4px 0 0', opacity: 0.85, fontSize: '14px', lineHeight: 1.5 }}>{game.description?.substring(0, 120)}{(game.description?.length || 0) > 120 ? '...' : ''}</p>
             </div>
           </div>
@@ -122,7 +124,7 @@ export function OrderModal({ game, onClose }: OrderModalProps) {
 
           {/* Package selection */}
           <h3 style={{ marginBottom: '16px', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '20px' }}>📦</span> เลือกแพ็กเกจ
+            <PackageCheck size={20} aria-hidden="true" /> เลือกแพ็กเกจ
           </h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: game.packages.length === 1 ? 'minmax(280px, 420px)' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
@@ -135,6 +137,9 @@ export function OrderModal({ game, onClose }: OrderModalProps) {
                 <div
                   key={pkg.id}
                   className="glass-card"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`เลือกแพ็กเกจ ${pkg.name} ราคา ${finalPrice} บาท`}
                   style={{
                     padding: '22px',
                     border: pkg.is_recommended ? '2px solid #8d6e63' : '1px solid rgba(141,110,99,0.15)',
@@ -146,12 +151,18 @@ export function OrderModal({ game, onClose }: OrderModalProps) {
                     minHeight: '220px'
                   }}
                   onClick={() => setSelectedPackage(pkg)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedPackage(pkg);
+                    }
+                  }}
                   onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(141,110,99,0.2)'; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = ''; }}
                 >
                   {pkg.is_recommended === 1 && (
                     <div style={{ position: 'absolute', top: 0, right: 0, background: 'linear-gradient(135deg, #8d6e63, #6d4c41)', color: 'white', fontSize: '11px', padding: '4px 12px', borderBottomLeftRadius: '12px', fontWeight: 600 }}>
-                      ⭐ แนะนำ
+                      แนะนำ
                     </div>
                   )}
 
@@ -173,7 +184,7 @@ export function OrderModal({ game, onClose }: OrderModalProps) {
                     <ul style={{ margin: '0', padding: '0', listStyle: 'none', fontSize: '13px', color: '#666' }}>
                       {highlights.slice(0, 4).map((h: string, i: number) => (
                         <li key={i} style={{ padding: '3px 0', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-                          <span style={{ color: '#4caf50', fontSize: '12px', marginTop: '2px' }}>✓</span>
+                          <Check size={14} color="#2f7d5b" aria-hidden="true" />
                           <span>{h}</span>
                         </li>
                       ))}
@@ -191,7 +202,7 @@ export function OrderModal({ game, onClose }: OrderModalProps) {
           {/* Warranty info */}
           {game.warranty_days > 0 && (
             <div style={{ marginTop: '20px', padding: '14px 18px', background: 'rgba(76,175,80,0.08)', borderRadius: '12px', border: '1px solid rgba(76,175,80,0.2)', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#2e7d32' }}>
-              <span style={{ fontSize: '18px' }}>🛡️</span>
+              <ShieldCheck size={18} aria-hidden="true" />
               <span>รับประกัน <strong>{game.warranty_days} วัน</strong> {game.warranty_note && `— ${game.warranty_note}`}</span>
             </div>
           )}

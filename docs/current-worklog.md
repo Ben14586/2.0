@@ -785,3 +785,36 @@ Validation:
   - `/api/payment/qr?amount=89` returns success.
   - `/api/orders` accepts a PNG slip, creates an `ORD-...` order, records slip status, and returns success.
 - Removed the generated UAT order/slip from the local database after verification so test data does not pollute operations.
+
+# 2026-06-27 - DESIGN.md Brand System
+
+- Added root `DESIGN.md` as the source of truth for the Game Services brand, color tokens, typography, spacing, elevation, components, and content rules.
+- Installed `@google/design.md` and added `npm run design:lint` through a Windows-safe Python launcher.
+- Applied the brand tokens to the shared frontend theme and rebuilt the home hero around a professional service-first message.
+- Reworked game cards, category filters, catalog count, empty state, keyboard access, and Thai labels into one consistent responsive system.
+- Kept the active Node backend migration untouched. The legacy Python backend packaging flow still references files removed by that migration and must be updated before producing the next backend zip.
+- Validation target: DESIGN.md lint, Vite production build, backend-node tests, and visual browser QA.
+
+# 2026-06-27 - Node Backend Deploy Package
+
+- Replaced the legacy Python backend packager with a Node backend-aware release packager.
+- Fixed `.dockerignore` so Docker and Render receive `backend-node/` during builds.
+- `backend-deploy-latest.zip` now contains the Docker config, Render config, compiled frontend, Node manifests/source, and public game images.
+- The package validator blocks databases, SQLite files, `.env`, dependencies, tests, backups, logs, archives, and customer slip uploads.
+- Added `npm run package:backend` for repeatable release generation.
+
+# 2026-06-27 - Responsive Browser QA
+
+- Verified the current Node-served frontend at desktop and 390x844 mobile viewports.
+- Confirmed the catalog loads 97 games, search for `RAID RUSH` returns 2 matching games, and no horizontal overflow occurs.
+- Confirmed game details and Checkout open successfully and the tested game image loads without errors.
+- Reduced mobile hero typography to prevent awkward wrapping.
+- Added dialog labeling, close-button labeling, keyboard-operable package cards, and Lucide icons to the game package flow.
+- Browser console reported no errors during the tested search, details, and Checkout path.
+
+# 2026-06-27 - Admin Bootstrap Login Fix
+
+- Fixed fresh Node deployments having an empty `admins` table with no working creation path.
+- The configured admin is created or its password is securely rotated from `ADMIN_USERNAME` and `ADMIN_BOOTSTRAP_PASSWORD`; changing the Render secret and redeploying restores access.
+- Render now persists SQLite at `/app/data/database.db` and requests admin/bootstrap secrets during Blueprint setup.
+- Localized the admin login form and invalid-credential message in Thai.
