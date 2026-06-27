@@ -22,7 +22,6 @@ backend-node/database.db
 backend-node/*.sqlite*
 backend-node/backups/
 backend-node/uploads/
-backend-node/tests/
 backend-node/*.log
 python_portable/
 python/
