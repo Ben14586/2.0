@@ -15,7 +15,13 @@ step2-backend-release/
 frontend/node_modules/
 .qodo/
 database.db.bak
-backend-node/
+backend-node/node_modules/
+backend-node/database.db
+backend-node/*.sqlite*
+backend-node/backups/
+backend-node/uploads/
+backend-node/tests/
+backend-node/*.log
 python_portable/
 python/
 python
