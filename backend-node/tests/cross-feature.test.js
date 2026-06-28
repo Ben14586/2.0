@@ -1,8 +1,9 @@
 const request = require('supertest');
 const app = require('../src/app');
+const { VALID_PNG } = require('./fixtures');
 
 describe('Cross-Feature Integration Tests (cross-feature.test.js)', () => {
-  const dummySlip = Buffer.from('dummy image data');
+  const dummySlip = VALID_PNG;
 
   describe('Tier 3: Pairwise & Cross-Feature Integration (7 cases)', () => {
     test('1. Register -> Login -> View Catalog -> Checkout -> Admin View Order', async () => {

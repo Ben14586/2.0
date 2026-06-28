@@ -78,6 +78,12 @@ def main() -> int:
 
     check('type="module" src="./runtime-config.js"' in (ROOT / "index.html").read_text(encoding="utf-8"), "runtime config is bundled without Vite warnings")
 
+    orders_source = (ROOT / "backend-node/src/routes/orders.js").read_text(encoding="utf-8")
+    settings_source = (ROOT / "backend-node/src/routes/settings.js").read_text(encoding="utf-8")
+    for marker in ("SLIP_VERIFICATION_NOT_CONFIGURED", "hasValidImageSignature", "expectedAmount", "duplicateTransaction", "paymentVerified: true"):
+        check(marker in orders_source, f"slip verification guard exists: {marker}")
+    check("SENSITIVE_KEYS" in settings_source and "secretConfigured" in settings_source, "admin API redacts stored secrets")
+
     if errors:
         print(f"\nPredeploy check failed: {len(errors)} issue(s)")
         return 1

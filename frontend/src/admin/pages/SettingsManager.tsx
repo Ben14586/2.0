@@ -17,6 +17,7 @@ export const SettingsManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [secretConfigured, setSecretConfigured] = useState<Record<string, boolean>>({});
 
   const fetchSettings = async () => {
     try {
@@ -25,8 +26,14 @@ export const SettingsManager: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem("admin_token");
+        window.location.reload();
+        return;
+      }
       if (data.success && data.data) {
         setSettings((prev) => ({ ...prev, ...data.data }));
+        setSecretConfigured(data.secretConfigured || {});
       }
     } catch (err) {
       console.error(err);
@@ -103,7 +110,7 @@ export const SettingsManager: React.FC = () => {
         {/* Telegram Settings */}
         <div className="bg-dark-paper rounded-xl p-6 border border-white/10">
           <h3 className="text-xl font-bold text-primary mb-4 flex items-center gap-2">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.98 1.25-5.58 3.68-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.41-1.43-.87.03-.24.34-.49.92-.75 3.62-1.58 6.04-2.62 7.25-3.13 3.45-1.45 4.16-1.7 4.63-1.71.1 0 .34.02.48.13.12.09.15.22.16.32-.01.07-.01.19-.02.24z"/></svg>
+            <svg style={{ width: 24, height: 24, flex: '0 0 auto' }} fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.98 1.25-5.58 3.68-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.41-1.43-.87.03-.24.34-.49.92-.75 3.62-1.58 6.04-2.62 7.25-3.13 3.45-1.45 4.16-1.7 4.63-1.71.1 0 .34.02.48.13.12.09.15.22.16.32-.01.07-.01.19-.02.24z"/></svg>
             ระบบแจ้งเตือน Telegram
           </h3>
           <p className="text-sm text-gray-400 mb-4">รับการแจ้งเตือนทันทีเมื่อมีออเดอร์ใหม่</p>
@@ -112,12 +119,12 @@ export const SettingsManager: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Bot Token</label>
               <input
-                type="text"
+                type="password"
                 name="telegram_bot_token"
                 value={settings.telegram_bot_token}
                 onChange={handleChange}
                 className="w-full bg-dark-bg border border-white/10 rounded-lg px-4 py-2 text-white focus:border-primary focus:outline-none"
-                placeholder="123456789:ABCdefGHIjklmNOPqrsTUVwxyz..."
+                placeholder={secretConfigured.telegram_bot_token ? "ตั้งค่าแล้ว กรอกใหม่เมื่อต้องการเปลี่ยน" : "กรอก Bot Token"}
               />
             </div>
             <div>
@@ -135,7 +142,7 @@ export const SettingsManager: React.FC = () => {
               onClick={handleTestTelegram}
               className="mt-2 text-sm bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded-lg transition-colors w-full flex justify-center items-center gap-2"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+              <svg style={{ width: 16, height: 16, flex: '0 0 auto' }} fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
               ทดสอบส่งข้อความเข้ามือถือ
             </button>
           </div>
@@ -144,7 +151,7 @@ export const SettingsManager: React.FC = () => {
         {/* SlipOK Settings */}
         <div className="bg-dark-paper rounded-xl p-6 border border-white/10">
           <h3 className="text-xl font-bold text-accent mb-4 flex items-center gap-2">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <svg style={{ width: 24, height: 24, flex: '0 0 auto' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             ระบบเช็คสลิป SlipOK
           </h3>
           <p className="text-sm text-gray-400 mb-4">ตรวจสลิปโอนเงินอัตโนมัติป้องกันสลิปปลอม</p>
@@ -153,12 +160,12 @@ export const SettingsManager: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">API Key</label>
               <input
-                type="text"
+                type="password"
                 name="slipok_api_key"
                 value={settings.slipok_api_key}
                 onChange={handleChange}
                 className="w-full bg-dark-bg border border-white/10 rounded-lg px-4 py-2 text-white focus:border-primary focus:outline-none"
-                placeholder="ZOP1ZPr+fi+a53p3YfH9PKWTt..."
+                placeholder={secretConfigured.slipok_api_key ? "ตั้งค่าแล้ว กรอกใหม่เมื่อต้องการเปลี่ยน" : "กรอก SlipOK API Key"}
               />
             </div>
             <div>

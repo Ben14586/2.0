@@ -1,8 +1,9 @@
 const request = require('supertest');
 const app = require('../src/app');
+const { VALID_PNG } = require('./fixtures');
 
 describe('Real-World Simulation Scenarios (scenarios.test.js)', () => {
-  const dummySlip = Buffer.from('dummy image data');
+  const dummySlip = VALID_PNG;
 
   // Scenario 1: Fresh customer checks catalog, creates account, gets referral bonus, places order with slip
   test('Scenario 1: Customer catalog check, registration, referral bonus, and checkout', async () => {

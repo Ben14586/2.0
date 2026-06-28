@@ -194,6 +194,9 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
       if (!orderResponse.ok || orderData.success === false) {
         throw new Error(orderData.error || 'สร้างออเดอร์ไม่สำเร็จ กรุณาลองใหม่');
       }
+      if (orderData.paymentVerified !== true) {
+        throw new Error('ระบบยังไม่ยืนยันการชำระเงิน จึงยังไม่สร้างออเดอร์');
+      }
 
       setOrderId(orderData.data?.orderId || orderData.orderId || orderData.data?.id || null);
       setIsSuccess(true);
@@ -265,14 +268,14 @@ export default function CheckoutModal({ selectedPackage, game, onClose }: Checko
           {isSuccess ? (
             <div style={{ padding: '34px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
               <div style={{ width: 78, height: 78, background: 'rgba(74,222,128,0.18)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22, color: '#16a34a', fontSize: 38 }}>✓</div>
-              <h3 style={{ margin: '0 0 8px', fontSize: 24, fontWeight: 800, color: '#342d3b' }}>สั่งซื้อสำเร็จ</h3>
+              <h3 style={{ margin: '0 0 8px', fontSize: 24, fontWeight: 800, color: '#342d3b' }}>ยืนยันสลิปแล้ว</h3>
               {orderId && (
                 <div style={{ margin: '6px 0 16px', padding: '10px 14px', borderRadius: 12, background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.28)', color: '#166534', fontSize: 14, fontWeight: 800 }}>
                   เลขออเดอร์: {orderId}
                 </div>
               )}
               <p style={{ margin: '0 0 24px', color: '#675d72', maxWidth: 330, lineHeight: 1.55 }}>
-                ระบบบันทึกคำสั่งซื้อและสลิปแล้ว กรุณาเก็บเลขออเดอร์ไว้ใช้ติดตามสถานะหรือแจ้งแอดมิน
+                ระบบตรวจยอดและธุรกรรมผ่านแล้ว ออเดอร์กำลังรอแอดมินดำเนินการ กรุณาเก็บเลขออเดอร์ไว้ติดตามสถานะ
               </p>
               <button onClick={onClose} className="primary-action" style={{ width: '100%', padding: 14 }}>
                 เสร็จสิ้น

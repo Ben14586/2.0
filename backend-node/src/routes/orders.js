@@ -45,7 +45,11 @@ async function verifySlip(file, expectedAmount) {
   const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
 
   if (process.env.NODE_ENV === 'test') {
-    return { fileHash, transRef: `TEST-${crypto.randomUUID()}`, amount: expectedAmount };
+    return {
+      fileHash: crypto.createHash('sha256').update(buffer).update(crypto.randomUUID()).digest('hex'),
+      transRef: `TEST-${crypto.randomUUID()}`,
+      amount: expectedAmount
+    };
   }
 
   const duplicateFile = await db.get('SELECT id FROM slip_checks WHERE file_hash = ?', [fileHash]);
@@ -324,6 +328,7 @@ router.get('/orders', verifyAdmin, async (req, res) => {
         loginMethod: o.login_method,
         price: o.price,
         status: o.status,
+        slipVerified: Boolean(o.slip_verified),
         slipImage: o.slip_image,
         createdAt: o.created_at
       });
@@ -352,6 +357,7 @@ router.get('/admin-orders', verifyAdmin, async (req, res) => {
         loginMethod: o.login_method,
         price: o.price,
         status: o.status,
+        slipVerified: Boolean(o.slip_verified),
         slipImage: o.slip_image,
         createdAt: o.created_at
       });
@@ -373,9 +379,12 @@ router.put('/orders/:orderId/status', verifyAdmin, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid or missing status' });
     }
 
-    const order = await db.get('SELECT id FROM orders WHERE id = ?', [orderId]);
+    const order = await db.get('SELECT id, slip_verified FROM orders WHERE id = ?', [orderId]);
     if (!order) {
       return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+    if ((status === 'processing' || status === 'completed') && !order.slip_verified) {
+      return res.status(409).json({ success: false, error: 'Payment slip is not verified' });
     }
 
     await db.run('UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [status, orderId]);
@@ -428,6 +437,7 @@ router.get('/orders/track', async (req, res) => {
         loginMethod: order.login_method,
         price: order.price,
         status: order.status,
+        paymentVerified: Boolean(order.slip_verified),
         slipImage: order.slip_image,
         createdAt: order.created_at
       }

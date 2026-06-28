@@ -243,11 +243,15 @@ export default function AdminOrders() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/orders`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin-orders`, {
         headers: getAdminHeaders(),
       });
-      if (res.status === 401 || res.status === 403) throw new Error('กรุณาเข้าสู่ระบบแอดมินใหม่');
-      if (!res.ok) throw new Error('ไม่สามารถโหลดรายการคำสั่งซื้อได้');
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('admin_token');
+        window.location.reload();
+        return;
+      }
+      if (!res.ok) throw new Error('ไม่สามารถโหลดรายการคำสั่งซื้อได้ กรุณาลองใหม่');
       const data = await res.json();
       setOrders(Array.isArray(data) ? data : data.data || []);
     } catch (err: any) {

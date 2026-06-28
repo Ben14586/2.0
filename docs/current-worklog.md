@@ -826,3 +826,12 @@ Validation:
 - Docker now includes the catalog seed and Node production defaults to `/app/data/database.db` whenever the Render disk is mounted.
 - Changed Render health check to `/health` and added stale admin-session validation so invalid saved tokens return users to login instead of a blank page.
 - Added `npm run predeploy:check` and GitHub Actions coverage for tracked backend files, Docker inputs, persistent database configuration, 97 active seed games, generated assets, and secret/data exclusions.
+
+# 2026-06-28 - Fail-Closed Slip Verification
+
+- Order creation now requires a valid image signature and successful SlipOK verification before inserting the order.
+- The server sends the authoritative package price to SlipOK, requires an exact amount match, uses branch logging for receiver/duplicate checks, and stores transaction/file fingerprints to block reuse.
+- Missing SlipOK credentials, provider errors, mismatched amounts, invalid images, and duplicate slips now reject the request without showing checkout success.
+- Slip images are stored on the Render persistent disk and only verified orders can move to processing/completed.
+- Admin settings responses redact Telegram, SlipOK, and LINE secrets; empty secret fields no longer erase stored values.
+- Admin pages clear stale tokens, order management uses the dedicated admin endpoint, and oversized Telegram icons were corrected.

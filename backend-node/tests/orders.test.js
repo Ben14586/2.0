@@ -1,8 +1,9 @@
 const request = require('supertest');
 const app = require('../src/app');
+const { VALID_PNG } = require('./fixtures');
 
 describe('Orders and Payments API (orders.test.js)', () => {
-  const dummySlip = Buffer.from('dummy image data');
+  const dummySlip = VALID_PNG;
 
   describe('Tier 1: Happy Path', () => {
     test('1. POST /api/orders should successfully create an order with valid form data and slip image', async () => {
@@ -50,6 +51,8 @@ describe('Orders and Payments API (orders.test.js)', () => {
     test('4. POST /api/orders/verify-slip should successfully upload and verify payment slip', async () => {
       const res = await request(app)
         .post('/api/orders/verify-slip')
+        .set('Authorization', 'Bearer admin_token_mock')
+        .field('amount', '89')
         .attach('slipImage', dummySlip, 'slip.png');
 
       if (res.status === 200) {
@@ -96,6 +99,7 @@ describe('Orders and Payments API (orders.test.js)', () => {
       const invalidSlip = Buffer.from('invalid file data');
       const res = await request(app)
         .post('/api/orders/verify-slip')
+        .set('Authorization', 'Bearer admin_token_mock')
         .attach('slipImage', invalidSlip, 'malicious.exe');
 
       if (res.status !== 404) {

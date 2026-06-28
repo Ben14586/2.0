@@ -1,5 +1,7 @@
 const request = require('supertest');
+const crypto = require('crypto');
 const app = require('../src/app');
+const { VALID_PNG } = require('./fixtures');
 const db = require('../src/db/helpers');
 
 describe('Security Fixes and Hardening Tests', () => {
@@ -157,7 +159,7 @@ describe('Security Fixes and Hardening Tests', () => {
         [pkgId, 'game-1', 'Tamper Package', 250.00, 'Test package']
       );
 
-      const dummySlip = Buffer.from('dummy image data');
+      const dummySlip = VALID_PNG;
       const res = await request(app)
         .post('/api/orders')
         .field('gameId', 'game-1')
@@ -178,6 +180,142 @@ describe('Security Fixes and Hardening Tests', () => {
   });
 
   describe('Arbitrary File Upload Restrictions', () => {
+    test('Should fail closed when SlipOK is not configured in production', async () => {
+      process.env.NODE_ENV = 'production';
+      delete process.env.SLIPOK_API_KEY;
+      delete process.env.SLIPOK_BRANCH_ID;
+      try {
+        const res = await request(app)
+          .post('/api/orders')
+          .field('gameId', 'game-stickman-defense-td')
+          .field('packageId', 'pkg-stickman-defense-td-reference')
+          .field('gameUsername', 'secure-player')
+          .field('gamePassword', 'secure-password')
+          .field('loginMethod', 'google')
+          .field('price', '89')
+          .attach('slipImage', VALID_PNG, 'slip.png');
+
+        expect(res.status).toBe(503);
+        expect(res.body.success).toBe(false);
+        expect(res.body.code).toBe('SLIP_VERIFICATION_NOT_CONFIGURED');
+      } finally {
+        process.env.NODE_ENV = 'test';
+      }
+    });
+
+    test('Should reject a renamed non-image before slip verification', async () => {
+      const fakeImage = Buffer.from('this is not a bank slip image');
+      const res = await request(app)
+        .post('/api/orders')
+        .field('gameId', 'game-stickman-defense-td')
+        .field('packageId', 'pkg-stickman-defense-td-reference')
+        .field('gameUsername', 'secure-player')
+        .field('gamePassword', 'secure-password')
+        .field('loginMethod', 'google')
+        .field('price', '89')
+        .attach('slipImage', fakeImage, 'slip.png');
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    test('Should create an order only after provider amount verification', async () => {
+      const originalFetch = global.fetch;
+      process.env.NODE_ENV = 'production';
+      process.env.SLIPOK_API_KEY = 'test-api-key';
+      process.env.SLIPOK_BRANCH_ID = 'test-branch';
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true, data: { success: true, transRef: `REF-${Date.now()}`, amount: 89 } })
+      });
+      try {
+        const verifiedImage = Buffer.concat([VALID_PNG, Buffer.from(`verified-${Date.now()}`)]);
+        const res = await request(app)
+          .post('/api/orders')
+          .field('gameId', 'game-stickman-defense-td')
+          .field('packageId', 'pkg-stickman-defense-td-reference')
+          .field('gameUsername', 'verified-player')
+          .field('gamePassword', 'secure-password')
+          .field('loginMethod', 'google')
+          .field('price', '1')
+          .attach('slipImage', verifiedImage, 'verified.png');
+
+        expect(res.status).toBe(201);
+        expect(res.body.paymentVerified).toBe(true);
+      } finally {
+        global.fetch = originalFetch;
+        delete process.env.SLIPOK_API_KEY;
+        delete process.env.SLIPOK_BRANCH_ID;
+        process.env.NODE_ENV = 'test';
+      }
+    });
+
+    test('Should reject mismatched amounts returned by the provider', async () => {
+      const originalFetch = global.fetch;
+      process.env.NODE_ENV = 'production';
+      process.env.SLIPOK_API_KEY = 'test-api-key';
+      process.env.SLIPOK_BRANCH_ID = 'test-branch';
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true, data: { success: true, transRef: `BAD-${Date.now()}`, amount: 1 } })
+      });
+      try {
+        const mismatchedImage = Buffer.concat([VALID_PNG, Buffer.from(`mismatch-${Date.now()}`)]);
+        const res = await request(app)
+          .post('/api/orders')
+          .field('gameId', 'game-stickman-defense-td')
+          .field('packageId', 'pkg-stickman-defense-td-reference')
+          .field('gameUsername', 'mismatch-player')
+          .field('gamePassword', 'secure-password')
+          .field('loginMethod', 'google')
+          .field('price', '89')
+          .attach('slipImage', mismatchedImage, 'mismatch.png');
+
+        expect(res.status).toBe(422);
+        expect(res.body.success).toBe(false);
+      } finally {
+        global.fetch = originalFetch;
+        delete process.env.SLIPOK_API_KEY;
+        delete process.env.SLIPOK_BRANCH_ID;
+        process.env.NODE_ENV = 'test';
+      }
+    });
+
+    test('Should reject reuse of the same verified slip image', async () => {
+      const originalFetch = global.fetch;
+      process.env.NODE_ENV = 'production';
+      process.env.SLIPOK_API_KEY = 'test-api-key';
+      process.env.SLIPOK_BRANCH_ID = 'test-branch';
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true, data: { success: true, transRef: `DUP-${crypto.randomUUID()}`, amount: 89 } })
+      });
+      const duplicateImage = Buffer.concat([VALID_PNG, Buffer.from(`duplicate-${Date.now()}`)]);
+      const submit = () => request(app)
+        .post('/api/orders')
+        .field('gameId', 'game-stickman-defense-td')
+        .field('packageId', 'pkg-stickman-defense-td-reference')
+        .field('gameUsername', 'duplicate-player')
+        .field('gamePassword', 'secure-password')
+        .field('loginMethod', 'google')
+        .field('price', '89')
+        .attach('slipImage', duplicateImage, 'duplicate.png');
+      try {
+        const first = await submit();
+        const second = await submit();
+        expect(first.status).toBe(201);
+        expect(second.status).toBe(409);
+      } finally {
+        global.fetch = originalFetch;
+        delete process.env.SLIPOK_API_KEY;
+        delete process.env.SLIPOK_BRANCH_ID;
+        process.env.NODE_ENV = 'test';
+      }
+    });
+
     test('Should reject non-image file uploads with 400 JSON response', async () => {
       const textFile = Buffer.from('console.log("hello malicious script");');
       const res = await request(app)

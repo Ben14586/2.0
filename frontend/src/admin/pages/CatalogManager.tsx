@@ -27,6 +27,11 @@ export function CatalogManager() {
       const res = await fetch('/api/admin-games', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
       });
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('admin_token');
+        window.location.reload();
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         setGames(data.data);
